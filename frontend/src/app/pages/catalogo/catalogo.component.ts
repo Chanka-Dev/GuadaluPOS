@@ -794,7 +794,7 @@ export class CatalogoComponent implements OnInit {
 
   formatMoneda(valor: number | string | null | undefined): string {
     const num = Number(valor || 0);
-    return `$${num.toFixed(2)}`;
+    return `Bs ${num.toFixed(2)}`;
   }
 
   manejarError(err: any): void {

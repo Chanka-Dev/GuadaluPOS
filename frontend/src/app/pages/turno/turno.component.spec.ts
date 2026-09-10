@@ -95,7 +95,7 @@ describe('TurnoComponent UI & Role Rules', () => {
     const cardActivo = fixture.nativeElement.querySelector('.card-turno-activo');
     expect(cardActivo).not.toBeNull();
     expect(cardActivo.textContent).toContain('Almacén Sucursal Centro');
-    expect(cardActivo.textContent).toContain('$150.00');
+    expect(cardActivo.textContent).toContain('Bs 150.00');
 
     // Botón de cerrar propio turno
     const btnCerrar = fixture.nativeElement.querySelector('#btn-cerrar-mi-turno');
@@ -209,6 +209,6 @@ describe('TurnoComponent UI & Role Rules', () => {
     const difCard = fixture.nativeElement.querySelector('.diferencia-card');
     expect(difCard).not.toBeNull();
     expect(difCard.textContent).toContain('SOBRANTE');
-    expect(difCard.textContent).toContain('$10.00');
+    expect(difCard.textContent).toContain('Bs 10.00');
   });
 });

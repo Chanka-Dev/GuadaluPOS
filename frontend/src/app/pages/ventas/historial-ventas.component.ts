@@ -317,7 +317,7 @@ export class HistorialVentasComponent implements OnInit {
 
   formatMoneda(val: number | string | null | undefined): string {
     const num = Number(val || 0);
-    return `$${num.toFixed(2)}`;
+    return `Bs ${num.toFixed(2)}`;
   }
 
   formatFecha(fechaIso?: string): string {

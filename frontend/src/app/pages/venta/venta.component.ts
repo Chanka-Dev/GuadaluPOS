@@ -133,16 +133,16 @@ export class VentaComponent implements OnInit, OnDestroy {
 
   formatMoneda(valor: number | string | null | undefined): string {
     const num = Number(valor || 0);
-    return `$${num.toFixed(2)}`;
+    return `Bs ${num.toFixed(2)}`;
   }
 
   formatPrecioPaquete(producto: Producto | null): string {
-    if (!producto) return '$0.00';
+    if (!producto) return 'Bs 0.00';
     if (producto.precio_venta_paquete !== null && producto.precio_venta_paquete !== undefined) {
-      return `$${Number(producto.precio_venta_paquete).toFixed(2)}`;
+      return `Bs ${Number(producto.precio_venta_paquete).toFixed(2)}`;
     }
     const total = Number(producto.precio_venta) * Number(producto.unidades_por_paquete || 1);
-    return `$${total.toFixed(2)}`;
+    return `Bs ${total.toFixed(2)}`;
   }
 
   obtenerPrecioBase(producto: Producto, unidad: 'unidad' | 'paquete'): number {
@@ -480,12 +480,12 @@ export class VentaComponent implements OnInit, OnDestroy {
         if (resp.offline) {
           // Confirmación visual distintiva de venta offline (reloj / pendiente)
           this.mensajeExitoOffline.set(
-            `Venta de $${subtotalTotal.toFixed(2)} guardada en la cola local (${payload.items.length} productos). Se sincronizará automáticamente al restablecerse la conexión.`
+            `Venta de Bs ${subtotalTotal.toFixed(2)} guardada en la cola local (${payload.items.length} productos). Se sincronizará automáticamente al restablecerse la conexión.`
           );
         } else {
           // Confirmación visual de éxito online
           this.mensajeExitoOnline.set(
-            `Venta registrada por $${(+resp.total).toFixed(2)} (${payload.items.length} productos). Código: ${resp.id.substring(0, 8)}`
+            `Venta registrada por Bs ${(+resp.total).toFixed(2)} (${payload.items.length} productos). Código: ${resp.id.substring(0, 8)}`
           );
         }
       },

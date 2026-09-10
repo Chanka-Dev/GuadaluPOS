@@ -141,7 +141,7 @@ export class TurnoComponent implements OnInit {
   // --------------------------------------------------------------------------
   formatearMoneda(val: number | string | null | undefined): string {
     const num = Number(val || 0);
-    return `$${num.toFixed(2)}`;
+    return `Bs ${num.toFixed(2)}`;
   }
 
   formatearFechaHora(iso: string | null | undefined): string {

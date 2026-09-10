@@ -235,7 +235,7 @@ describe('VentaComponent UI Interaction', () => {
     expect(component.carrito().length).toBe(0);
     expect(component.totalCarrito()).toBe(0);
     // 2. Mensaje de éxito visible
-    expect(component.mensajeExitoOnline()).toContain('Venta registrada por $2.00');
+    expect(component.mensajeExitoOnline()).toContain('Venta registrada por Bs 2.00');
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.notif-banner.exito')?.textContent).toContain('Venta registrada con éxito');

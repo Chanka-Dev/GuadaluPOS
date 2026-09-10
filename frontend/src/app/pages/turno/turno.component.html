@@ -275,7 +275,7 @@
       @if (!resultadoCierre()) {
         <form (ngSubmit)="confirmarCierre()" class="form-modal">
           <div class="form-group">
-            <label for="input-monto-contado">Efectivo Final Contado en Caja ($) *</label>
+            <label for="input-monto-contado">Efectivo Final Contado en Caja (Bs) *</label>
             <input
               id="input-monto-contado"
               type="number"
@@ -351,7 +351,7 @@
               } @else if (obtenerEstadoDiferencia(resultadoCierre()?.diferencia) === 'faltante') {
                 {{ formatearMoneda(resultadoCierre()?.diferencia) }}
               } @else {
-                $0.00
+                Bs 0.00
               }
             </div>
 

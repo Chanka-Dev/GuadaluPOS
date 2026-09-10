@@ -510,7 +510,7 @@
 
         <div class="form-row-2">
           <div class="form-group">
-            <label for="prod_precio">Precio de Venta ($) *</label>
+            <label for="prod_precio">Precio de Venta (Bs) *</label>
             <input id="prod_precio" type="number" step="0.01" min="0" formControlName="precio_venta" />
           </div>
 
@@ -529,7 +529,7 @@
 
         @if (formProducto.value.permite_venta_por_paquete) {
           <div class="form-group" style="margin-top: 8px;">
-            <label for="prod_precio_paq">Precio Venta por Paquete ($) (Fijo de catálogo)</label>
+            <label for="prod_precio_paq">Precio Venta por Paquete (Bs) (Fijo de catálogo)</label>
             <input
               id="prod_precio_paq"
               type="number"
@@ -539,7 +539,7 @@
               placeholder="Ej. {{ ((formProducto.value.precio_venta || 0) * (formProducto.value.unidades_por_paquete || 1)) | number:'1.2-2' }}"
             />
             <span class="text-muted text-xs">
-              Si se deja vacío, el sistema calculará: {{ (formProducto.value.unidades_por_paquete || 1) }} uds × ${{ formProducto.value.precio_venta || 0 }} = ${{ ((formProducto.value.precio_venta || 0) * (formProducto.value.unidades_por_paquete || 1)) | number:'1.2-2' }}
+              Si se deja vacío, el sistema calculará: {{ (formProducto.value.unidades_por_paquete || 1) }} uds × Bs {{ formProducto.value.precio_venta || 0 }} = Bs {{ ((formProducto.value.precio_venta || 0) * (formProducto.value.unidades_por_paquete || 1)) | number:'1.2-2' }}
             </span>
           </div>
         }
@@ -679,7 +679,7 @@
           </div>
 
           <div class="form-group">
-            <label for="lote_ppaq">Precio por Paquete ($) *</label>
+            <label for="lote_ppaq">Precio por Paquete (Bs) *</label>
             <input id="lote_ppaq" type="number" step="0.01" min="0" formControlName="precio_compra_paquete" />
           </div>
         </div>

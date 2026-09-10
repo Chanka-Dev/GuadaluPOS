@@ -167,10 +167,10 @@ describe('HistorialVentasComponent', () => {
     expect(component.kpiMargenPorcentaje()).toBe(28.0);
 
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.valor-efectivo')?.textContent).toContain('$100.00');
-    expect(compiled.querySelector('.valor-qr')?.textContent).toContain('$250.00');
-    expect(compiled.querySelector('.valor-costo')?.textContent).toContain('$252.00');
-    expect(compiled.querySelector('.valor-ganancia')?.textContent).toContain('+$98.00');
+    expect(compiled.querySelector('.valor-efectivo')?.textContent).toContain('Bs 100.00');
+    expect(compiled.querySelector('.valor-qr')?.textContent).toContain('Bs 250.00');
+    expect(compiled.querySelector('.valor-costo')?.textContent).toContain('Bs 252.00');
+    expect(compiled.querySelector('.valor-ganancia')?.textContent).toContain('+Bs 98.00');
   });
 
   it('Oculta métricas de costos y ganancias si el usuario es solo vendedor', () => {
