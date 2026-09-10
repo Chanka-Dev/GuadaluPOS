@@ -190,3 +190,199 @@
 .costo-monto { font-size: 1.15rem; font-weight: 700; color: #fbbf24; font-family: monospace; }
 .ganancia-monto { font-size: 1.3rem; font-weight: 800; color: #10b981; font-family: monospace; }
 .margen-inline { font-size: 0.8rem; color: #6ee7b7; font-weight: normal; }
+
+/* ============================================ */
+/* VISTA MÓVIL: TARJETAS Y ADAPTABILIDAD TOUCH */
+/* ============================================ */
+.mobile-ventas-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-venta-card {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.4);
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+.mobile-venta-card:active {
+  background: rgba(56, 189, 248, 0.08);
+}
+.mobile-venta-card:last-child {
+  border-bottom: none;
+}
+
+.mvc-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.mvc-ticket-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.mvc-hash {
+  color: #38bdf8;
+  font-weight: 800;
+  font-size: 0.8rem;
+}
+.mvc-id {
+  font-family: monospace;
+  font-weight: 700;
+  color: #f1f5f9;
+  font-size: 0.88rem;
+}
+.mvc-fecha {
+  font-size: 0.74rem;
+  color: #94a3b8;
+}
+
+.mvc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.mvc-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.mvc-vendedor {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  font-weight: 600;
+}
+.mvc-items-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+}
+
+.mvc-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.07);
+}
+.mvc-pago-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mvc-total-box {
+  text-align: right;
+}
+.mvc-total-box .monto-total {
+  font-size: 1.15rem;
+}
+
+@media (max-width: 768px) {
+  :host {
+    padding: 12px 10px 80px;
+  }
+  .page-header {
+    margin-bottom: 14px;
+    gap: 6px;
+  }
+  .page-header h1 {
+    font-size: 1.45rem;
+    margin-bottom: 2px;
+  }
+  .header-subtitle {
+    font-size: 0.8rem;
+    line-height: 1.35;
+  }
+
+  /* KPIs compactos en rejilla 2x3 */
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .kpi-card {
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+  .kpi-header {
+    margin-bottom: 4px;
+  }
+  .kpi-label {
+    font-size: 0.65rem;
+  }
+  .kpi-icon {
+    font-size: 1rem;
+  }
+  .kpi-value {
+    font-size: 1.18rem;
+  }
+  .kpi-meta {
+    display: none;
+  }
+
+  /* Filtros móviles táctiles */
+  .filtros-container {
+    padding: 12px;
+    border-radius: 14px;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .filtros-top, .filtros-bottom {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .alcance-tabs {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 3px;
+  }
+  .alcance-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tab-btn {
+    padding: 7px 12px;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+  }
+  .btn-refresh {
+    width: 100%;
+    justify-content: center;
+    padding: 9px;
+  }
+  .search-box {
+    width: 100%;
+    min-width: unset;
+  }
+  .select-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .custom-select {
+    flex: 1;
+  }
+
+  /* Modales móviles */
+  .modal-backdrop {
+    padding: 10px;
+  }
+  .modal-card {
+    border-radius: 18px;
+    max-height: 92vh;
+  }
+  .modal-header, .modal-body, .modal-footer {
+    padding: 14px 16px;
+  }
+  .detalle-meta-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}

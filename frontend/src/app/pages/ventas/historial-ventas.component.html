@@ -9,7 +9,7 @@
         Consulta transacciones en tiempo real, verifica pagos y corrige métodos de cobro para un cuadre perfecto de caja.
       </p>
     </div>
-    <div class="header-actions">
+    <div class="header-actions desktop-flex">
       <a routerLink="/venta" class="btn-ir-pos">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="9" cy="21" r="1"></circle>
@@ -206,7 +206,7 @@
       <p>No hay transacciones registradas con los filtros seleccionados.</p>
     </div>
 
-    <div *ngIf="!cargando() && ventasFiltradas().length > 0" class="responsive-table-wrapper">
+    <div *ngIf="!cargando() && ventasFiltradas().length > 0" class="responsive-table-wrapper desktop-only">
       <table class="ventas-table">
         <thead>
           <tr>
@@ -313,6 +313,81 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Vista de Tarjetas Móvil (Mobile Cards View) -->
+    <div *ngIf="!cargando() && ventasFiltradas().length > 0" class="mobile-ventas-list mobile-only">
+      <div
+        *ngFor="let venta of ventasFiltradas()"
+        class="mobile-venta-card"
+        (click)="abrirModalDetalle(venta)"
+      >
+        <!-- Cabecera de la tarjeta: Ticket, fecha y badge offline -->
+        <div class="mvc-top">
+          <div class="mvc-ticket-badge">
+            <span class="mvc-hash">#</span>
+            <span class="mvc-id">{{ venta.id.substring(0, 8) }}</span>
+            <span *ngIf="venta.offline" class="badge-offline">Offline</span>
+          </div>
+          <span class="mvc-fecha">{{ formatFecha(venta.vendida_en || venta.created_at) }}</span>
+        </div>
+
+        <!-- Cuerpo: Vendedor, Almacén y Productos -->
+        <div class="mvc-body">
+          <div class="mvc-meta-row">
+            <span class="mvc-vendedor">👤 {{ venta.usuario?.name || 'Vendedor' }}</span>
+            <span class="tag-almacen">{{ venta.almacen?.nombre || 'General' }}</span>
+          </div>
+          <div class="mvc-items-row">
+            <span class="badge-items-count">{{ venta.detalles?.length || 0 }} ítems:</span>
+            <span class="primer-producto" *ngIf="venta.detalles && venta.detalles.length > 0">
+              {{ venta.detalles[0].producto?.nombre }}
+              <span *ngIf="venta.detalles.length > 1" class="otros-items">
+                (+{{ venta.detalles.length - 1 }})
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Pie: Método de pago, corrección rápida y Total cobrado -->
+        <div class="mvc-footer">
+          <div class="mvc-pago-box">
+            <span
+              class="badge-metodo"
+              [ngClass]="{
+                'metodo-efectivo': venta.metodo_pago === 'efectivo',
+                'metodo-transferencia': venta.metodo_pago === 'transferencia',
+                'metodo-tarjeta': venta.metodo_pago === 'tarjeta'
+              }"
+            >
+              <span class="metodo-icon" *ngIf="venta.metodo_pago === 'efectivo'">💵</span>
+              <span class="metodo-icon" *ngIf="venta.metodo_pago === 'transferencia'">📱</span>
+              <span class="metodo-icon" *ngIf="venta.metodo_pago === 'tarjeta'">💳</span>
+              {{ getNombreMetodo(venta.metodo_pago) }}
+            </span>
+
+            <button
+              type="button"
+              class="btn-corregir-pago"
+              (click)="$event.stopPropagation(); abrirModalEditarPago(venta)"
+              title="Corregir si se cobró por otro medio"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              <span>Editar</span>
+            </button>
+          </div>
+
+          <div class="mvc-total-box">
+            <div class="monto-total">{{ formatMoneda(venta.total) }}</div>
+            <div *ngIf="puedeVerGanancias()" class="sub-ganancia">
+              <span class="ganancia-tag">+{{ formatMoneda(calcularGananciaVenta(venta)) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 

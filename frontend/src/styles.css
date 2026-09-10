@@ -21,10 +21,22 @@ body {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 100;
+  z-index: 1100;
 }
 @media (min-width: 600px) {
   .modal-backdrop { align-items: center; }
+}
+
+/* Responsive visibility utilities */
+.desktop-only { display: block; }
+.desktop-flex { display: flex; }
+.mobile-only { display: none !important; }
+
+@media (max-width: 768px) {
+  .desktop-only { display: none !important; }
+  .desktop-flex { display: none !important; }
+  .mobile-only { display: block !important; }
+  .mobile-flex { display: flex !important; }
 }
 
 .modal-card {
