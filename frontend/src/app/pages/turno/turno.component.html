@@ -1,0 +1,378 @@
+<div class="turno-container">
+  <!-- ENCABEZADO -->
+  <header class="turno-header">
+    <div class="header-titles">
+      <span class="badge-modulo">CONTABILIDAD Y CAJA</span>
+      <h1>Turno de Caja</h1>
+      <p class="subtitle">Apertura, arqueo y cierre contable de turnos con balance de efectivo en caja.</p>
+    </div>
+  </header>
+
+  <!-- NOTIFICACIONES Y ALERTAS -->
+  @if (successMsg()) {
+    <div class="alerta alerta-exito">
+      <div class="alerta-contenido">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span>{{ successMsg() }}</span>
+      </div>
+      <button class="btn-alerta-cerrar" (click)="cerrarAlertaExito()">✕</button>
+    </div>
+  }
+
+  @if (errorMsg()) {
+    <div class="alerta alerta-error">
+      <div class="alerta-contenido">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>{{ errorMsg() }}</span>
+      </div>
+      <button class="btn-alerta-cerrar" (click)="cerrarAlertaError()">✕</button>
+    </div>
+  }
+
+  <!-- SECCIÓN 1: TURNO PROPIO DEL USUARIO -->
+  <div class="seccion-propia">
+    @if (cargando()) {
+      <div class="card-turno-cargando">
+        <div class="spinner"></div>
+        <p>Verificando estado de caja...</p>
+      </div>
+    } @else if (turnoPropio()) {
+      <!-- TARJETA DE TURNO ACTIVO -->
+      <div class="card-turno-activo">
+        <div class="card-header-activo">
+          <div class="header-left">
+            <span class="badge-status-activo">TURNO ABIERTO</span>
+            <h2>{{ turnoPropio()?.almacen?.nombre || 'Caja Principal' }}</h2>
+          </div>
+          <button class="btn-cerrar-turno" (click)="abrirModalCerrar(turnoPropio()!)" id="btn-cerrar-mi-turno">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+              <line x1="12" y1="10" x2="12" y2="16"></line>
+              <line x1="9" y1="13" x2="15" y2="13"></line>
+            </svg>
+            Cerrar Turno de Caja
+          </button>
+        </div>
+
+        <div class="detalles-grid">
+          <div class="detalle-item">
+            <span class="detalle-label">Fondo Inicial en Caja</span>
+            <span class="detalle-valor valor-inicial">
+              {{ formatearMoneda(turnoPropio()?.monto_inicial) }}
+            </span>
+          </div>
+
+          <div class="detalle-item">
+            <span class="detalle-label">Ventas en Efectivo</span>
+            <span class="detalle-valor text-emerald">
+              {{ formatearMoneda(turnoPropio()?.resumen_contable?.ventas_efectivo || 0) }}
+              <small class="sub-conteo">({{ turnoPropio()?.resumen_contable?.conteo_efectivo || 0 }} tickets)</small>
+            </span>
+          </div>
+
+          <div class="detalle-item detalle-destacado">
+            <span class="detalle-label">Efectivo Físico Esperado (Gaveta)</span>
+            <span class="detalle-valor valor-destacado">
+              {{ formatearMoneda(turnoPropio()?.resumen_contable?.monto_esperado_efectivo || turnoPropio()?.monto_inicial) }}
+            </span>
+          </div>
+
+          <div class="detalle-item">
+            <span class="detalle-label">Ventas QR / Transferencia (Banco)</span>
+            <span class="detalle-valor text-sky">
+              {{ formatearMoneda(turnoPropio()?.resumen_contable?.ventas_transferencia || 0) }}
+              <small class="sub-conteo">({{ turnoPropio()?.resumen_contable?.conteo_transferencia || 0 }} pagos)</small>
+            </span>
+          </div>
+
+          <div class="detalle-item">
+            <span class="detalle-label">Total Recaudado en Turno</span>
+            <span class="detalle-valor text-purple">
+              {{ formatearMoneda(turnoPropio()?.resumen_contable?.total_recaudado || 0) }}
+              <small class="sub-conteo">({{ turnoPropio()?.resumen_contable?.total_transacciones || 0 }} ventas)</small>
+            </span>
+          </div>
+
+          <div class="detalle-item">
+            <span class="detalle-label">Apertura</span>
+            <span class="detalle-valor">
+              {{ formatearFechaHora(turnoPropio()?.fecha_apertura) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Desglose por vendedor si la caja es compartida -->
+        @if (turnoPropio()?.resumen_contable?.desglose_vendedores && turnoPropio()!.resumen_contable!.desglose_vendedores!.length > 1) {
+          <div class="caja-compartida-resumen">
+            <h4>Caja Compartida: Ventas por Vendedor</h4>
+            <div class="vendedores-grid">
+              @for (v of turnoPropio()!.resumen_contable!.desglose_vendedores!; track v.usuario_id) {
+                <div class="vendedor-card-mini">
+                  <span class="vendedor-nombre">{{ v.nombre }}</span>
+                  <span class="vendedor-monto">{{ formatearMoneda(v.total) }}</span>
+                  <small class="vendedor-stats">{{ v.conteo }} ventas (Efectivo: {{ formatearMoneda(v.efectivo) }} | QR: {{ formatearMoneda(v.transferencia) }})</small>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <!-- MENSAJE DE SIN TURNO ABIERTO (con enlace a /venta) -->
+      <div class="card-sin-turno">
+        <div class="sin-turno-icono">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+        </div>
+        <div class="sin-turno-info">
+          <h3>No tienes un turno de caja abierto</h3>
+          <p>Para registrar ventas y transacciones en efectivo, debes abrir tu turno desde el punto de venta.</p>
+        </div>
+        <a routerLink="/venta" class="btn-primary btn-ir-venta" id="btn-ir-a-venta">
+          Ir al Punto de Venta
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </a>
+      </div>
+    }
+  </div>
+
+  <!-- SECCIÓN 2: SUPERVISIÓN GLOBAL DE TURNOS ABIERTOS (Solo Master / Administrador) -->
+  @if (esAdminOMaster()) {
+    <section class="seccion-supervision">
+      <div class="seccion-header">
+        <div>
+          <h2>Turnos Abiertos en el Sistema</h2>
+          <p class="subtitle">Supervisión y arqueo de turnos activos en todas las cajas y almacenes.</p>
+        </div>
+      </div>
+
+      <div class="tabla-card">
+        @if (turnosAbiertosGlobales().length === 0) {
+          <div class="estado-vacio">
+            <p>No hay otros turnos de caja abiertos en el sistema actualmente.</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Vendedor / Cajero</th>
+                  <th>Almacén</th>
+                  <th>Monto Inicial</th>
+                  <th>Hora de Apertura</th>
+                  <th style="text-align: right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (t of turnosAbiertosGlobales(); track t.id) {
+                  <tr>
+                    <td class="col-usuario">
+                      <strong>{{ t.usuario?.name || 'Vendedor' }}</strong>
+                      <small class="user-subtext">{{ t.usuario?.email }}</small>
+                    </td>
+                    <td>
+                      <span class="badge-almacen">{{ t.almacen?.nombre || 'Almacén' }}</span>
+                    </td>
+                    <td>
+                      <strong class="monto-inicial">{{ formatearMoneda(t.monto_inicial) }}</strong>
+                    </td>
+                    <td class="col-fecha">
+                      {{ formatearFechaHora(t.fecha_apertura) }}
+                    </td>
+                    <td style="text-align: right;">
+                      <button
+                        class="btn-accion-cerrar"
+                        (click)="abrirModalCerrar(t)"
+                        title="Cerrar y arquear turno de este usuario"
+                        [id]="'btn-cerrar-turno-' + t.id"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                          <line x1="12" y1="10" x2="12" y2="16"></line>
+                          <line x1="9" y1="13" x2="15" y2="13"></line>
+                        </svg>
+                        Cerrar Turno
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: ARQUEO Y CIERRE DE TURNO -->
+<!-- ========================================================================= -->
+@if (mostrandoModalCierre()) {
+  <div class="modal-backdrop">
+    <div class="modal-card modal-cierre-caja">
+      <div class="modal-header">
+        <h3>Arqueo y Cierre de Turno</h3>
+        <button class="btn-close" (click)="cerrarModal()">✕</button>
+      </div>
+
+      <!-- Resumen de datos del turno a cerrar -->
+      <div class="cierre-info-header">
+        <div class="info-row">
+          <span class="info-lbl">Cajero / Vendedor:</span>
+          <strong>{{ turnoACerrar()?.usuario?.name || authService.usuarioActual()?.name }}</strong>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Almacén:</span>
+          <span>{{ turnoACerrar()?.almacen?.nombre || 'Caja' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Fondo Inicial en Caja:</span>
+          <span>{{ formatearMoneda(turnoACerrar()?.monto_inicial) }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Ventas en Efectivo:</span>
+          <span class="text-emerald">+{{ formatearMoneda(turnoACerrar()?.resumen_contable?.ventas_efectivo || 0) }}</span>
+        </div>
+        <div class="info-row highlight-row">
+          <span class="info-lbl">Efectivo Físico Esperado en Gaveta:</span>
+          <strong class="text-destacado">{{ formatearMoneda(turnoACerrar()?.resumen_contable?.monto_esperado_efectivo || turnoACerrar()?.monto_inicial) }}</strong>
+        </div>
+        <div class="info-row qr-row">
+          <span class="info-lbl">Cobrado por QR / Banco (No contar en gaveta):</span>
+          <span class="text-sky">{{ formatearMoneda(turnoACerrar()?.resumen_contable?.ventas_transferencia || 0) }}</span>
+        </div>
+      </div>
+
+      <!-- Mensaje de error visible dentro del modal -->
+      @if (errorModalMsg()) {
+        <div class="alerta alerta-error" style="margin-bottom: 16px;">
+          <div class="alerta-contenido">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>{{ errorModalMsg() }}</span>
+          </div>
+          <button type="button" class="btn-alerta-cerrar" (click)="errorModalMsg.set(null)">✕</button>
+        </div>
+      }
+
+      <!-- PASO A: FORMULARIO DE CONTEO (Si aún no se cerró) -->
+      @if (!resultadoCierre()) {
+        <form (ngSubmit)="confirmarCierre()" class="form-modal">
+          <div class="form-group">
+            <label for="input-monto-contado">Efectivo Final Contado en Caja ($) *</label>
+            <input
+              id="input-monto-contado"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              [(ngModel)]="montoContado"
+              name="montoContado"
+              required
+              autofocus
+            />
+            <span class="form-hint">
+              Cuente todo el dinero en efectivo presente en el cajón de dinero e ingrese el total exacto.
+            </span>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" (click)="cerrarModal()">
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="btn-danger"
+              (click)="confirmarCierre()"
+              [disabled]="montoContado === null || procesandoCierre()"
+              id="btn-confirmar-cierre-turno"
+            >
+              @if (procesandoCierre()) {
+                Cerrando y Arqueando...
+              } @else {
+                Confirmar Cierre de Turno
+              }
+            </button>
+          </div>
+        </form>
+      } @else {
+        <!-- PASO B: RESULTADO DEL ARQUEO (Una vez confirmado el cierre) -->
+        <div class="resultado-arqueo">
+          <div class="resumen-grid">
+            <div class="resumen-card">
+              <span class="resumen-lbl">Monto Esperado</span>
+              <strong class="resumen-val">{{ formatearMoneda(resultadoCierre()?.monto_final_esperado) }}</strong>
+            </div>
+            <div class="resumen-card">
+              <span class="resumen-lbl">Monto Contado</span>
+              <strong class="resumen-val">{{ formatearMoneda(resultadoCierre()?.monto_final_contado) }}</strong>
+            </div>
+          </div>
+
+          <!-- INDICADOR VISUAL DE DIFERENCIA (Sobrante: Verde / Faltante: Rojo / Exacto: Neutro) -->
+          <div
+            class="diferencia-card"
+            [class.dif-sobrante]="obtenerEstadoDiferencia(resultadoCierre()?.diferencia) === 'sobrante'"
+            [class.dif-faltante]="obtenerEstadoDiferencia(resultadoCierre()?.diferencia) === 'faltante'"
+            [class.dif-exacto]="obtenerEstadoDiferencia(resultadoCierre()?.diferencia) === 'exacto'"
+          >
+            <div class="dif-header">
+              <span class="dif-titulo">DIFERENCIA DE CAJA</span>
+              <span class="dif-badge">
+                @if (obtenerEstadoDiferencia(resultadoCierre()?.diferencia) === 'sobrante') {
+                  + SOBRANTE DE DINERO
+                } @else if (obtenerEstadoDiferencia(resultadoCierre()?.diferencia) === 'faltante') {
+                  - FALTANTE DE DINERO
+                } @else {
+                  ✓ CAJA CUADRADA (EXACTO)
+                }
+              </span>
+            </div>
+
+            <div class="dif-monto">
+              @if (obtenerEstadoDiferencia(resultadoCierre()?.diferencia) === 'sobrante') {
+                +{{ formatearMoneda(resultadoCierre()?.diferencia) }}
+              } @else if (obtenerEstadoDiferencia(resultadoCierre()?.diferencia) === 'faltante') {
+                {{ formatearMoneda(resultadoCierre()?.diferencia) }}
+              } @else {
+                $0.00
+              }
+            </div>
+
+            <p class="dif-descripcion">
+              @if (obtenerEstadoDiferencia(resultadoCierre()?.diferencia) === 'sobrante') {
+                El monto contado supera el saldo calculado según las ventas en efectivo registradas en este turno.
+              } @else if (obtenerEstadoDiferencia(resultadoCierre()?.diferencia) === 'faltante') {
+                El monto contado es inferior al saldo calculado según las ventas en efectivo registradas en este turno.
+              } @else {
+                El efectivo en caja coincide exactamente con el saldo inicial sumado a las ventas registradas.
+              }
+            </p>
+          </div>
+
+          <div class="modal-actions" style="margin-top: 20px;">
+            <button type="button" class="btn-primary" (click)="cerrarModal()" id="btn-finalizar-arqueo">
+              Entendido / Finalizar
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

@@ -1,0 +1,862 @@
+<div class="catalogo-container">
+  <!-- Header principal -->
+  <header class="catalogo-header">
+    <div>
+      <h1>Catálogo e Inventarios</h1>
+      <p class="subtitle">Gestión centralizada de productos, proveedores, almacenes y lotes FEFO</p>
+    </div>
+
+    <!-- Barra de Pestañas -->
+    <nav class="tabs-nav" role="tablist">
+      <button
+        class="tab-btn"
+        [class.active]="tabActivo() === 'productos'"
+        (click)="cambiarTab('productos')"
+        role="tab"
+      >
+        <span class="tab-icon">📦</span>
+        <span>Productos</span>
+        <span class="tab-count">{{ productos().length }}</span>
+      </button>
+
+      <button
+        class="tab-btn"
+        [class.active]="tabActivo() === 'proveedores'"
+        (click)="cambiarTab('proveedores')"
+        role="tab"
+      >
+        <span class="tab-icon">🏢</span>
+        <span>Proveedores</span>
+        <span class="tab-count">{{ proveedores().length }}</span>
+      </button>
+
+      <button
+        class="tab-btn"
+        [class.active]="tabActivo() === 'almacenes'"
+        (click)="cambiarTab('almacenes')"
+        role="tab"
+      >
+        <span class="tab-icon">🏬</span>
+        <span>Almacenes</span>
+        <span class="tab-count">{{ almacenes().length }}</span>
+      </button>
+
+      <button
+        class="tab-btn"
+        [class.active]="tabActivo() === 'lotes'"
+        (click)="cambiarTab('lotes')"
+        role="tab"
+      >
+        <span class="tab-icon">⏳</span>
+        <span>Lotes & FEFO</span>
+        <span class="tab-count">{{ lotes().length }}</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Notificaciones y Errores -->
+  @if (successMsg()) {
+    <div class="notif-banner exito" role="alert">
+      <span class="notif-icon">✓</span>
+      <span>{{ successMsg() }}</span>
+      <button class="notif-close" (click)="successMsg.set(null)">✕</button>
+    </div>
+  }
+
+  @if (errorMsg()) {
+    <div class="notif-banner error" role="alert">
+      <span class="notif-icon">⚠️</span>
+      <span>{{ errorMsg() }}</span>
+      <button class="notif-close" (click)="errorMsg.set(null)">✕</button>
+    </div>
+  }
+
+  <!-- ==================================================================== -->
+  <!-- PESTAÑA 1: PRODUCTOS                                                 -->
+  <!-- ==================================================================== -->
+  @if (tabActivo() === 'productos') {
+    <section class="tab-content">
+      <div class="tab-toolbar">
+        <div class="search-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar por nombre o descripción..."
+            [value]="busqueda()"
+            (input)="busqueda.set($any($event.target).value)"
+          />
+        </div>
+
+        <button class="btn-primary" (click)="abrirModalNuevoProducto()">
+          <span class="btn-icon">+</span>
+          <span>Nuevo Producto</span>
+        </button>
+      </div>
+
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Precio Venta</th>
+                <th>Config. Paquete</th>
+                <th>Estado</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (prod of productosFiltrados(); track prod.id) {
+                <tr>
+                  <td>
+                    <div class="producto-cell">
+                      <div class="prod-thumb">
+                        @if (prod.foto_path) {
+                          <img [src]="prod.foto_path" alt="{{ prod.nombre }}" />
+                        } @else {
+                          <span class="thumb-placeholder">📦</span>
+                        }
+                      </div>
+                      <div>
+                        <div class="font-bold text-white">{{ prod.nombre }}</div>
+                        @if (prod.descripcion) {
+                          <div class="text-muted text-xs">{{ prod.descripcion }}</div>
+                        }
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge-precio">{{ formatMoneda(prod.precio_venta) }}</span>
+                  </td>
+                  <td>
+                    @if (prod.permite_venta_por_paquete) {
+                      <span class="badge-tag badge-cyan">
+                        Pack x {{ prod.unidades_por_paquete }} unid.
+                      </span>
+                    } @else {
+                      <span class="text-muted text-xs">Solo unidades (1)</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="status-indicator active">Activo</span>
+                  </td>
+                  <td class="text-right">
+                    <div class="actions-group">
+                      <button class="btn-icon-action" title="Editar" (click)="abrirModalEditarProducto(prod)">
+                        ✏️
+                      </button>
+                      <button
+                        class="btn-icon-action btn-danger-action"
+                        title="Desactivar"
+                        (click)="solicitarDesactivar('producto', prod)"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="empty-state">
+                    No se encontraron productos que coincidan con la búsqueda.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  }
+
+  <!-- ==================================================================== -->
+  <!-- PESTAÑA 2: PROVEEDORES                                               -->
+  <!-- ==================================================================== -->
+  @if (tabActivo() === 'proveedores') {
+    <section class="tab-content">
+      <div class="tab-toolbar">
+        <div class="search-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar proveedor o teléfono..."
+            [value]="busqueda()"
+            (input)="busqueda.set($any($event.target).value)"
+          />
+        </div>
+
+        <button class="btn-primary" (click)="abrirModalNuevoProveedor()">
+          <span class="btn-icon">+</span>
+          <span>Nuevo Proveedor</span>
+        </button>
+      </div>
+
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+                <th>Notas</th>
+                <th>Estado</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (prov of proveedoresFiltrados(); track prov.id) {
+                <tr>
+                  <td>
+                    <span class="font-bold text-white">{{ prov.nombre }}</span>
+                  </td>
+                  <td>
+                    @if (prov.telefono) {
+                      <a href="tel:{{ prov.telefono }}" class="text-link">📞 {{ prov.telefono }}</a>
+                    } @else {
+                      <span class="text-muted text-xs">Sin teléfono</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="text-muted text-xs">{{ prov.notas || '—' }}</span>
+                  </td>
+                  <td>
+                    <span class="status-indicator active">Activo</span>
+                  </td>
+                  <td class="text-right">
+                    <div class="actions-group">
+                      <button class="btn-icon-action" title="Editar" (click)="abrirModalEditarProveedor(prov)">
+                        ✏️
+                      </button>
+                      <button
+                        class="btn-icon-action btn-danger-action"
+                        title="Desactivar"
+                        (click)="solicitarDesactivar('proveedor', prov)"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="empty-state">
+                    No se encontraron proveedores registrados.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  }
+
+  <!-- ==================================================================== -->
+  <!-- PESTAÑA 3: ALMACENES                                                 -->
+  <!-- ==================================================================== -->
+  @if (tabActivo() === 'almacenes') {
+    <section class="tab-content">
+      <div class="tab-toolbar">
+        <div></div>
+        <button class="btn-primary" (click)="abrirModalNuevoAlmacen()">
+          <span class="btn-icon">+</span>
+          <span>Nuevo Almacén</span>
+        </button>
+      </div>
+
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre del Almacén</th>
+                <th>Tipo de Almacén</th>
+                <th>Estado</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (alm of almacenes(); track alm.id) {
+                <tr>
+                  <td>
+                    <span class="font-bold text-white">{{ alm.nombre }}</span>
+                  </td>
+                  <td>
+                    @if (alm.tipo === 'principal') {
+                      <span class="badge-tag badge-purple">🏬 Principal (Depósito)</span>
+                    } @else {
+                      <span class="badge-tag badge-emerald">🛒 Punto de Venta</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="status-indicator active">Activo</span>
+                  </td>
+                  <td class="text-right">
+                    <div class="actions-group">
+                      <button class="btn-icon-action" title="Editar" (click)="abrirModalEditarAlmacen(alm)">
+                        ✏️
+                      </button>
+                      <button
+                        class="btn-icon-action btn-danger-action"
+                        title="Desactivar"
+                        (click)="solicitarDesactivar('almacen', alm)"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4" class="empty-state">
+                    No hay almacenes activos registrados.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  }
+
+  <!-- ==================================================================== -->
+  <!-- PESTAÑA 4: LOTES & FEFO                                              -->
+  <!-- ==================================================================== -->
+  @if (tabActivo() === 'lotes') {
+    <section class="tab-content">
+      <div class="tab-toolbar">
+        <div class="filters-row">
+          <div class="search-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar por producto, proveedor o almacén..."
+              [value]="busqueda()"
+              (input)="busqueda.set($any($event.target).value)"
+            />
+          </div>
+
+          <select
+            class="select-filter"
+            [value]="filtroAlmacenLote()"
+            (change)="filtroAlmacenLote.set($any($event.target).value)"
+          >
+            <option value="">Todos los Almacenes</option>
+            @for (alm of almacenes(); track alm.id) {
+              <option [value]="alm.id">{{ alm.nombre }}</option>
+            }
+          </select>
+        </div>
+
+        <button class="btn-primary" (click)="abrirModalIngresarLote()">
+          <span class="btn-icon">+</span>
+          <span>Ingresar Lote Nuevo</span>
+        </button>
+      </div>
+
+      <!-- Grupos de Lotes por Producto -->
+      <div class="lotes-grupos-container">
+        @for (grupo of lotesPorProducto(); track grupo.producto?.id) {
+          <div class="grupo-card">
+            <div class="grupo-header">
+              <div class="grupo-prod-info">
+                <span class="prod-badge-icon">📦</span>
+                <div>
+                  <h3>{{ grupo.producto?.nombre || 'Producto no identificado' }}</h3>
+                  <span class="text-muted text-xs">
+                    Stock total en lotes activos: <strong>{{ grupo.totalUnidades }} unidades</strong>
+                  </span>
+                </div>
+              </div>
+              <span class="badge-total-lotes">{{ grupo.lotes.length }} lotes</span>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table data-table-lotes">
+                <thead>
+                  <tr>
+                    <th>Almacén</th>
+                    <th>Proveedor</th>
+                    <th>Stock Disponible</th>
+                    <th>Vencimiento (FEFO)</th>
+                    <th>Precio Compra</th>
+                    <th>Estado</th>
+                    <th class="text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (lote of grupo.lotes; track lote.id) {
+                    <tr>
+                      <td>
+                        <span class="font-bold text-white">{{ lote.almacen?.nombre || 'Almacén' }}</span>
+                      </td>
+                      <td>
+                        <span class="text-muted text-sm">{{ lote.proveedor?.nombre || 'Proveedor' }}</span>
+                      </td>
+                      <td>
+                        <span class="badge-stock">{{ calcularStockLote(lote) | number }} unidades</span>
+                        @if (lote.cantidad_paquetes > 0) {
+                          <span class="text-muted text-xs"> ({{ lote.cantidad_paquetes }} paq{{ lote.cantidad_unidades > 0 ? ' + ' + lote.cantidad_unidades + ' uds' : '' }})</span>
+                        }
+                      </td>
+                      <td>
+                        @switch (calcularEstadoVencimiento(lote.fecha_vencimiento)) {
+                          @case ('vencido') {
+                            <span class="badge-vencimiento vencido">
+                              ⚠️ {{ formatearSoloFecha(lote.fecha_vencimiento) }} ({{ diasRestantesVencimiento(lote.fecha_vencimiento) }})
+                            </span>
+                          }
+                          @case ('proximo') {
+                            <span class="badge-vencimiento proximo">
+                              ⏱️ {{ formatearSoloFecha(lote.fecha_vencimiento) }} ({{ diasRestantesVencimiento(lote.fecha_vencimiento) }})
+                            </span>
+                          }
+                          @case ('normal') {
+                            <span class="badge-vencimiento normal">
+                              📅 {{ formatearSoloFecha(lote.fecha_vencimiento) }}
+                            </span>
+                          }
+                          @default {
+                            <span class="text-muted text-xs">Sin vencimiento</span>
+                          }
+                        }
+                      </td>
+                      <td>
+                        <span class="text-sm font-mono">{{ formatMoneda(lote.precio_compra_unitario) }}</span>
+                      </td>
+                      <td>
+                        <span class="status-indicator active">{{ lote.estado }}</span>
+                      </td>
+                      <td class="text-right">
+                        <div class="actions-group">
+                          <button
+                            class="btn-editar-lote"
+                            (click)="abrirModalEditarLote(lote)"
+                            title="Editar lote"
+                          >
+                            ✏️ Editar
+                          </button>
+                          <button
+                            class="btn-transferir"
+                            (click)="abrirModalTransferirLote(lote)"
+                            [disabled]="calcularStockLote(lote) <= 0"
+                          >
+                            🔄 Transferir
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-state-card">
+            <span class="empty-icon">⏳</span>
+            <h3>No se encontraron lotes registrados</h3>
+            <p>Utiliza el botón "+ Ingresar Lote Nuevo" para registrar ingresos de mercadería con FEFO.</p>
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>
+
+<!-- ==================================================================== -->
+<!-- MODALES DEL SISTEMA                                                  -->
+<!-- ==================================================================== -->
+
+<!-- Modal Producto (Nuevo / Editar) -->
+@if (mostrandoModalProducto()) {
+  <div class="modal-backdrop" (click)="mostrandoModalProducto.set(false)">
+    <div class="modal-card modal-catalogo" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ editandoProducto() ? 'Editar Producto' : 'Nuevo Producto' }}</h3>
+        <button class="btn-close" (click)="mostrandoModalProducto.set(false)">✕</button>
+      </div>
+
+      <form [formGroup]="formProducto" (ngSubmit)="guardarProducto()" class="form-modal">
+        <div class="form-group">
+          <label for="prod_nombre">Nombre del Producto *</label>
+          <input id="prod_nombre" type="text" formControlName="nombre" placeholder="Ej. Arroz Grano de Oro 1kg" />
+        </div>
+
+        <div class="form-group">
+          <label for="prod_desc">Descripción</label>
+          <textarea id="prod_desc" formControlName="descripcion" rows="2" placeholder="Detalles opcionales..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="prod_foto">URL de la Foto</label>
+          <input id="prod_foto" type="url" formControlName="foto_path" placeholder="https://ejemplo.com/foto.jpg" />
+          @if (formProducto.get('foto_path')?.value) {
+            <div class="url-preview-box">
+              <span class="text-xs text-muted">Vista previa:</span>
+              <img [src]="formProducto.get('foto_path')?.value" alt="Preview" class="preview-img" />
+            </div>
+          }
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="prod_precio">Precio de Venta ($) *</label>
+            <input id="prod_precio" type="number" step="0.01" min="0" formControlName="precio_venta" />
+          </div>
+
+          <div class="form-group">
+            <label for="prod_unidades">Unidades por Paquete *</label>
+            <input id="prod_unidades" type="number" min="1" formControlName="unidades_por_paquete" />
+          </div>
+        </div>
+
+        <div class="form-checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" formControlName="permite_venta_por_paquete" />
+            <span>Permitir venta por paquete cerrado (selector en POS)</span>
+          </label>
+        </div>
+
+        @if (formProducto.value.permite_venta_por_paquete) {
+          <div class="form-group" style="margin-top: 8px;">
+            <label for="prod_precio_paq">Precio Venta por Paquete ($) (Fijo de catálogo)</label>
+            <input
+              id="prod_precio_paq"
+              type="number"
+              step="0.01"
+              min="0"
+              formControlName="precio_venta_paquete"
+              placeholder="Ej. {{ ((formProducto.value.precio_venta || 0) * (formProducto.value.unidades_por_paquete || 1)) | number:'1.2-2' }}"
+            />
+            <span class="text-muted text-xs">
+              Si se deja vacío, el sistema calculará: {{ (formProducto.value.unidades_por_paquete || 1) }} uds × ${{ formProducto.value.precio_venta || 0 }} = ${{ ((formProducto.value.precio_venta || 0) * (formProducto.value.unidades_por_paquete || 1)) | number:'1.2-2' }}
+            </span>
+          </div>
+        }
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="mostrandoModalProducto.set(false)">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="procesandoForm() || formProducto.invalid">
+            {{ procesandoForm() ? 'Guardando...' : 'Guardar Producto' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Modal Proveedor (Nuevo / Editar) -->
+@if (mostrandoModalProveedor()) {
+  <div class="modal-backdrop" (click)="mostrandoModalProveedor.set(false)">
+    <div class="modal-card modal-catalogo" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ editandoProveedor() ? 'Editar Proveedor' : 'Nuevo Proveedor' }}</h3>
+        <button class="btn-close" (click)="mostrandoModalProveedor.set(false)">✕</button>
+      </div>
+
+      <form [formGroup]="formProveedor" (ngSubmit)="guardarProveedor()" class="form-modal">
+        <div class="form-group">
+          <label for="prov_nombre">Nombre o Razón Social *</label>
+          <input id="prov_nombre" type="text" formControlName="nombre" placeholder="Ej. Distribuidora Santa Cruz" />
+        </div>
+
+        <div class="form-group">
+          <label for="prov_tel">Teléfono / Celular</label>
+          <input id="prov_tel" type="text" formControlName="telefono" placeholder="Ej. 70012345" />
+        </div>
+
+        <div class="form-group">
+          <label for="prov_notas">Notas / Contacto</label>
+          <textarea id="prov_notas" formControlName="notas" rows="3" placeholder="Información adicional..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="mostrandoModalProveedor.set(false)">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="procesandoForm() || formProveedor.invalid">
+            {{ procesandoForm() ? 'Guardando...' : 'Guardar Proveedor' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Modal Almacén (Nuevo / Editar) -->
+@if (mostrandoModalAlmacen()) {
+  <div class="modal-backdrop" (click)="mostrandoModalAlmacen.set(false)">
+    <div class="modal-card modal-catalogo" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ editandoAlmacen() ? 'Editar Almacén' : 'Nuevo Almacén' }}</h3>
+        <button class="btn-close" (click)="mostrandoModalAlmacen.set(false)">✕</button>
+      </div>
+
+      <form [formGroup]="formAlmacen" (ngSubmit)="guardarAlmacen()" class="form-modal">
+        <div class="form-group">
+          <label for="alm_nombre">Nombre del Almacén *</label>
+          <input id="alm_nombre" type="text" formControlName="nombre" placeholder="Ej. Almacén Central" />
+        </div>
+
+        <div class="form-group">
+          <label for="alm_tipo">Tipo de Almacén *</label>
+          <select id="alm_tipo" formControlName="tipo">
+            <option value="venta">Punto de Venta</option>
+            <option value="principal">Depósito Principal</option>
+          </select>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="mostrandoModalAlmacen.set(false)">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="procesandoForm() || formAlmacen.invalid">
+            {{ procesandoForm() ? 'Guardando...' : 'Guardar Almacén' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Modal Ingresar Lote -->
+@if (mostrandoModalLote()) {
+  <div class="modal-backdrop" (click)="mostrandoModalLote.set(false)">
+    <div class="modal-card modal-catalogo modal-lote-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ editandoLote() ? 'Editar Lote / Compra' : 'Ingresar Nuevo Lote' }}</h3>
+        <button class="btn-close" (click)="mostrandoModalLote.set(false)">✕</button>
+      </div>
+
+      <form [formGroup]="formLote" (ngSubmit)="guardarIngresoLote()" class="form-modal">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="lote_prod">Producto *</label>
+            <select id="lote_prod" formControlName="producto_id" (change)="alCambiarProductoLote($event)">
+              <option value="">Selecciona un producto</option>
+              @for (prod of productos(); track prod.id) {
+                <option [value]="prod.id">{{ prod.nombre }} ({{ prod.unidades_por_paquete }} uds/paq)</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="lote_prov">Proveedor *</label>
+            <select id="lote_prov" formControlName="proveedor_id">
+              <option value="">Selecciona un proveedor</option>
+              @for (prov of proveedores(); track prov.id) {
+                <option [value]="prov.id">{{ prov.nombre }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="lote_alm">Almacén de Ingreso *</label>
+          <select id="lote_alm" formControlName="almacen_id">
+            <option value="">Selecciona almacén de destino</option>
+            @for (alm of almacenes(); track alm.id) {
+              <option [value]="alm.id">{{ alm.nombre }} ({{ alm.tipo }})</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-row-3">
+          <div class="form-group">
+            <label for="lote_paq">Cant. Paquetes *</label>
+            <input id="lote_paq" type="number" min="1" formControlName="cantidad_paquetes" />
+          </div>
+
+          <div class="form-group">
+            <label for="lote_upaq">Uds por Paquete *</label>
+            <input id="lote_upaq" type="number" min="1" formControlName="unidades_por_paquete" />
+          </div>
+
+          <div class="form-group">
+            <label for="lote_ppaq">Precio por Paquete ($) *</label>
+            <input id="lote_ppaq" type="number" step="0.01" min="0" formControlName="precio_compra_paquete" />
+          </div>
+        </div>
+
+        <!-- Tarjeta de Resumen de Cálculos Automáticos -->
+        <div class="lote-resumen-calculos">
+          <div class="resumen-col">
+            <span class="resumen-label">Total Unidades</span>
+            <span class="resumen-valor text-emerald">{{ unidadesTotalesCalculadas() | number }} uds</span>
+            <span class="resumen-sub">{{ formLote.value.cantidad_paquetes || 0 }} paq × {{ formLote.value.unidades_por_paquete || 1 }} uds</span>
+          </div>
+          <div class="resumen-col">
+            <span class="resumen-label">Precio Unitario Calculado</span>
+            <span class="resumen-valor text-blue">{{ formatMoneda(precioUnitarioCalculado()) }} / ud</span>
+            <span class="resumen-sub">Costo por unidad</span>
+          </div>
+          <div class="resumen-col">
+            <span class="resumen-label">Costo Total Compra</span>
+            <span class="resumen-valor text-amber">{{ formatMoneda(costoTotalCalculado()) }}</span>
+            <span class="resumen-sub">Inversión total</span>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: -6px; margin-bottom: 12px;">
+          <label for="lote_sueltas" class="text-xs text-muted">
+            + Unidades sueltas adicionales (opcional si compraste unidades sueltas extra)
+          </label>
+          <input id="lote_sueltas" type="number" min="0" formControlName="cantidad_unidades_sueltas" />
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="lote_fingreso">Fecha de Ingreso *</label>
+            <input id="lote_fingreso" type="date" formControlName="fecha_ingreso" />
+          </div>
+
+          <div class="form-group">
+            <label for="lote_fvenc">Fecha de Vencimiento</label>
+            <input id="lote_fvenc" type="date" formControlName="fecha_vencimiento" />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="mostrandoModalLote.set(false)">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="procesandoForm() || formLote.invalid">
+            {{ procesandoForm() ? 'Guardando...' : (editandoLote() ? 'Guardar Cambios' : 'Registrar Ingreso') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Modal Transferir Lote -->
+@if (mostrandoModalTransferir()) {
+  <div class="modal-backdrop" (click)="mostrandoModalTransferir.set(false)">
+    <div class="modal-card modal-catalogo" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Transferencia entre Almacenes</h3>
+        <button class="btn-close" (click)="mostrandoModalTransferir.set(false)">✕</button>
+      </div>
+
+      <div class="transfer-info-box">
+        <div class="info-row">
+          <span class="text-muted">Producto:</span>
+          <strong>{{ loteATransferir()?.producto?.nombre }}</strong>
+        </div>
+        <div class="info-row">
+          <span class="text-muted">Almacén Origen:</span>
+          <span class="badge-tag badge-purple">{{ loteATransferir()?.almacen?.nombre }}</span>
+        </div>
+        <div class="info-row">
+          <span class="text-muted">Stock Disponible:</span>
+          <strong class="text-emerald">{{ calcularStockLote(loteATransferir()!) }} unidades</strong>
+        </div>
+      </div>
+
+      <form [formGroup]="formTransferir" (ngSubmit)="ejecutarTransferencia()" class="form-modal">
+        <div class="form-group">
+          <label for="trans_dest">Almacén Destino *</label>
+          <select id="trans_dest" formControlName="almacen_destino_id">
+            <option value="">Selecciona almacén destino</option>
+            @for (dest of almacenesDestinoDisponibles(); track dest.id) {
+              <option [value]="dest.id">{{ dest.nombre }} ({{ dest.tipo }})</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="trans_paq">Cant. Paquetes a Transferir *</label>
+            <input
+              id="trans_paq"
+              type="number"
+              min="0"
+              formControlName="cantidad_paquetes"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="trans_sueltas">+ Unidades Sueltas (Opcional)</label>
+            <input
+              id="trans_sueltas"
+              type="number"
+              min="0"
+              formControlName="cantidad_unidades_sueltas"
+            />
+          </div>
+        </div>
+
+        <!-- Indicador de total a transferir -->
+        <div class="transfer-calc-box" style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+            <span class="text-muted">Total a transferir:</span>
+            <strong class="text-emerald" style="font-size: 1rem;">
+              {{ unidadesTransferirCalculadas() | number }} unidades
+            </strong>
+          </div>
+          @if (unidadesTransferirCalculadas() > calcularStockLote(loteATransferir()!)) {
+            <span class="text-danger text-xs" style="color: #ef4444; display: block; margin-top: 4px;">
+              ⚠️ La cantidad supera el stock disponible en este lote ({{ calcularStockLote(loteATransferir()!) }} uds).
+            </span>
+          }
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="mostrandoModalTransferir.set(false)">Cancelar</button>
+          <button
+            type="submit"
+            class="btn-primary"
+            [disabled]="procesandoForm() || formTransferir.invalid || unidadesTransferirCalculadas() <= 0 || unidadesTransferirCalculadas() > calcularStockLote(loteATransferir()!)"
+          >
+            {{ procesandoForm() ? 'Transfiriendo...' : 'Confirmar Transferencia' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Modal Confirmación de Desactivación -->
+@if (elementoADesactivar()) {
+  <div class="modal-backdrop" (click)="cancelarDesactivacion()">
+    <div class="modal-card modal-confirm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Confirmar Desactivación</h3>
+        <button class="btn-close" (click)="cancelarDesactivacion()">✕</button>
+      </div>
+
+      <div class="confirm-body">
+        <p>
+          ¿Estás seguro de que deseas desactivar el {{ elementoADesactivar()?.tipo }}:
+          <strong>"{{ elementoADesactivar()?.nombre }}"</strong>?
+        </p>
+
+        @if (elementoADesactivar()?.advertenciaLotes) {
+          <div class="alert-box-warning">
+            <span class="warning-icon">⚠️</span>
+            <div>
+              <strong>¡Aviso Importante!</strong>
+              <p>Este almacén contiene lotes con stock activo. Si lo desactivas, no podrás asignar nuevos movimientos o ventas desde este almacén.</p>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="cancelarDesactivacion()">Cancelar</button>
+        <button
+          type="button"
+          class="btn-danger"
+          [disabled]="procesandoForm()"
+          (click)="confirmarDesactivacion()"
+        >
+          {{ procesandoForm() ? 'Desactivando...' : 'Sí, Desactivar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,527 @@
+<div class="historial-container">
+
+  <!-- Header con título y acciones globales -->
+  <header class="page-header">
+    <div class="header-titles">
+      <div class="badge-modulo">Auditoría y Arqueo</div>
+      <h1>Historial de Ventas</h1>
+      <p class="header-subtitle">
+        Consulta transacciones en tiempo real, verifica pagos y corrige métodos de cobro para un cuadre perfecto de caja.
+      </p>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/venta" class="btn-ir-pos">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <span>Punto de Venta</span>
+      </a>
+      <a routerLink="/turno" class="btn-ir-turno">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+          <path d="M7 15h0M2 9.5h20"></path>
+        </svg>
+        <span>Arqueo de Turno</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Mensajes de feedback -->
+  <div *ngIf="successMsg()" class="alert-banner alert-success">
+    <span class="alert-icon">✓</span>
+    <span class="alert-text">{{ successMsg() }}</span>
+    <button class="alert-close" (click)="successMsg.set(null)">×</button>
+  </div>
+
+  <div *ngIf="errorMsg()" class="alert-banner alert-danger">
+    <span class="alert-icon">⚠</span>
+    <span class="alert-text">{{ errorMsg() }}</span>
+    <button class="alert-close" (click)="errorMsg.set(null)">×</button>
+  </div>
+
+  <!-- Tarjetas KPI de Resumen Financiero -->
+  <section class="kpi-grid">
+    <div class="kpi-card kpi-total">
+      <div class="kpi-header">
+        <span class="kpi-label">TOTAL RECAUDADO</span>
+        <span class="kpi-icon">💰</span>
+      </div>
+      <div class="kpi-value">{{ formatMoneda(kpiTotalMonto()) }}</div>
+      <div class="kpi-meta">{{ kpiTotalTransacciones() }} transacciones registradas</div>
+    </div>
+
+    <div class="kpi-card kpi-efectivo">
+      <div class="kpi-header">
+        <span class="kpi-label">EFECTIVO (GAVETA FÍSICA)</span>
+        <span class="kpi-icon">💵</span>
+      </div>
+      <div class="kpi-value valor-efectivo">{{ formatMoneda(kpiTotalEfectivo()) }}</div>
+      <div class="kpi-meta">Dinero que debe estar en el cajón</div>
+    </div>
+
+    <div class="kpi-card kpi-qr">
+      <div class="kpi-header">
+        <span class="kpi-label">PAGOS QR / TRANSFERENCIA</span>
+        <span class="kpi-icon">📱</span>
+      </div>
+      <div class="kpi-value valor-qr">{{ formatMoneda(kpiTotalTransferencia()) }}</div>
+      <div class="kpi-meta">Ingresó a cuenta bancaria (No en gaveta)</div>
+    </div>
+
+    <div class="kpi-card kpi-tarjeta">
+      <div class="kpi-header">
+        <span class="kpi-label">TARJETAS DÉBITO / CRÉDITO</span>
+        <span class="kpi-icon">💳</span>
+      </div>
+      <div class="kpi-value valor-tarjeta">{{ formatMoneda(kpiTotalTarjeta()) }}</div>
+      <div class="kpi-meta">Cobros POS bancarios</div>
+    </div>
+
+    <!-- KPIs Financieros Exclusivos para Roles Directivos (master, admin, supervisor) -->
+    <div *ngIf="puedeVerGanancias()" class="kpi-card kpi-costo">
+      <div class="kpi-header">
+        <span class="kpi-label">COSTO DE MERCADERÍA</span>
+        <span class="kpi-icon">📦</span>
+      </div>
+      <div class="kpi-value valor-costo">{{ formatMoneda(kpiTotalCosto()) }}</div>
+      <div class="kpi-meta">Costo total de adquisición según lotes</div>
+    </div>
+
+    <div *ngIf="puedeVerGanancias()" class="kpi-card kpi-ganancia">
+      <div class="kpi-header">
+        <span class="kpi-label">GANANCIA NETA ESTIMADA</span>
+        <span class="kpi-badge-margen">+{{ kpiMargenPorcentaje() | number:'1.1-1' }}% margen</span>
+      </div>
+      <div class="kpi-value valor-ganancia">+{{ formatMoneda(kpiTotalGanancia()) }}</div>
+      <div class="kpi-meta">Utilidad comercial bruta sobre ventas filtradas</div>
+    </div>
+  </section>
+
+  <!-- Barra de Filtros y Búsqueda -->
+  <section class="filtros-container">
+    <div class="filtros-top">
+      <!-- Filtro de alcance temporal -->
+      <div class="alcance-tabs">
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="filtroAlcance() === 'turno_actual'"
+          (click)="cambiarAlcance('turno_actual')"
+        >
+          <span>🎯 Mi Turno Actual</span>
+          <span *ngIf="turnoActivo()" class="tab-badge">Activo</span>
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="filtroAlcance() === 'hoy'"
+          (click)="cambiarAlcance('hoy')"
+        >
+          <span>📅 Ventas de Hoy</span>
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="filtroAlcance() === 'todos'"
+          (click)="cambiarAlcance('todos')"
+        >
+          <span>🌐 Todas las Ventas</span>
+        </button>
+      </div>
+
+      <!-- Botón refrescar -->
+      <button type="button" class="btn-refresh" (click)="cargarVentas()" [disabled]="cargando()" title="Recargar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spinning]="cargando()">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span>Refrescar</span>
+      </button>
+    </div>
+
+    <div class="filtros-bottom">
+      <!-- Buscador de texto -->
+      <div class="search-box">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          type="text"
+          [ngModel]="terminoBusqueda()"
+          (ngModelChange)="terminoBusqueda.set($event)"
+          placeholder="Buscar por ticket, vendedor, almacén o producto..."
+          class="search-input"
+        />
+        <button *ngIf="terminoBusqueda()" (click)="terminoBusqueda.set('')" class="clear-search">×</button>
+      </div>
+
+      <!-- Filtro por Método de Pago -->
+      <div class="select-group">
+        <label for="filtro-metodo">Canal de Cobro:</label>
+        <select
+          id="filtro-metodo"
+          [ngModel]="filtroMetodoPago()"
+          (ngModelChange)="cambiarMetodoPago($event)"
+          class="custom-select"
+        >
+          <option value="">Todos los métodos</option>
+          <option value="efectivo">💵 Solo Efectivo</option>
+          <option value="transferencia">📱 Solo QR / Transferencia</option>
+          <option value="tarjeta">💳 Solo Tarjeta</option>
+        </select>
+      </div>
+
+      <!-- Filtro por Almacén -->
+      <div *ngIf="almacenes().length > 1" class="select-group">
+        <label for="filtro-almacen">Almacén:</label>
+        <select
+          id="filtro-almacen"
+          [ngModel]="filtroAlmacenId()"
+          (ngModelChange)="cambiarAlmacen($event)"
+          class="custom-select"
+        >
+          <option value="">Todos los almacenes</option>
+          <option *ngFor="let alm of almacenes()" [value]="alm.id">
+            {{ alm.nombre }}
+          </option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tabla de Ventas -->
+  <section class="table-container">
+    <div *ngIf="cargando()" class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando ventas y desgloses contables...</p>
+    </div>
+
+    <div *ngIf="!cargando() && ventasFiltradas().length === 0" class="empty-state">
+      <div class="empty-icon">🧾</div>
+      <h3>No se encontraron ventas</h3>
+      <p>No hay transacciones registradas con los filtros seleccionados.</p>
+    </div>
+
+    <div *ngIf="!cargando() && ventasFiltradas().length > 0" class="responsive-table-wrapper">
+      <table class="ventas-table">
+        <thead>
+          <tr>
+            <th>Fecha / Ticket</th>
+            <th>Vendedor</th>
+            <th>Almacén</th>
+            <th>Productos</th>
+            <th>Método de Cobro</th>
+            <th class="text-right">Total Cobrado</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let venta of ventasFiltradas()" class="venta-row">
+            <!-- Fecha y UUID -->
+            <td class="col-ticket">
+              <div class="ticket-date">{{ formatFecha(venta.vendida_en || venta.created_at) }}</div>
+              <div class="ticket-id" [title]="venta.id">
+                #{{ venta.id.substring(0, 8) }}
+                <span *ngIf="venta.offline" class="badge-offline">Offline</span>
+              </div>
+            </td>
+
+            <!-- Vendedor -->
+            <td class="col-vendedor">
+              <div class="vendedor-nombre">{{ venta.usuario?.name || 'Vendedor #' + venta.usuario_id }}</div>
+              <div class="vendedor-email">{{ venta.usuario?.email || '' }}</div>
+            </td>
+
+            <!-- Almacén -->
+            <td class="col-almacen">
+              <span class="tag-almacen">{{ venta.almacen?.nombre || 'General' }}</span>
+            </td>
+
+            <!-- Resumen de Productos -->
+            <td class="col-productos">
+              <div class="productos-resumen" (click)="abrirModalDetalle(venta)">
+                <span class="badge-items-count">{{ venta.detalles?.length || 0 }} ítems</span>
+                <span class="primer-producto" *ngIf="venta.detalles && venta.detalles.length > 0">
+                  {{ venta.detalles[0].producto?.nombre }}
+                  <span *ngIf="venta.detalles.length > 1" class="otros-items">
+                    (+{{ venta.detalles.length - 1 }} más)
+                  </span>
+                </span>
+              </div>
+            </td>
+
+            <!-- Método de Cobro + Botón Corrección -->
+            <td class="col-metodo">
+              <div class="metodo-badge-container">
+                <span
+                  class="badge-metodo"
+                  [ngClass]="{
+                    'metodo-efectivo': venta.metodo_pago === 'efectivo',
+                    'metodo-transferencia': venta.metodo_pago === 'transferencia',
+                    'metodo-tarjeta': venta.metodo_pago === 'tarjeta'
+                  }"
+                >
+                  <span class="metodo-icon" *ngIf="venta.metodo_pago === 'efectivo'">💵</span>
+                  <span class="metodo-icon" *ngIf="venta.metodo_pago === 'transferencia'">📱</span>
+                  <span class="metodo-icon" *ngIf="venta.metodo_pago === 'tarjeta'">💳</span>
+                  {{ getNombreMetodo(venta.metodo_pago) }}
+                </span>
+
+                <button
+                  type="button"
+                  class="btn-corregir-pago"
+                  (click)="abrirModalEditarPago(venta)"
+                  title="Corregir si se cobró por otro medio"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  <span>Corregir</span>
+                </button>
+              </div>
+            </td>
+
+            <!-- Total -->
+            <td class="col-total text-right">
+              <div class="monto-total">{{ formatMoneda(venta.total) }}</div>
+              <div *ngIf="puedeVerGanancias()" class="sub-ganancia">
+                <span class="ganancia-tag">+{{ formatMoneda(calcularGananciaVenta(venta)) }}</span>
+                <span class="margen-tag">({{ calcularMargenVenta(venta) | number:'1.0-1' }}%)</span>
+              </div>
+            </td>
+
+            <!-- Acciones -->
+            <td class="col-acciones text-center">
+              <button
+                type="button"
+                class="btn-action-detalle"
+                (click)="abrirModalDetalle(venta)"
+                title="Ver detalle del ticket"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <span>Detalle</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- MODAL: DETALLE COMPLETO DEL TICKET           -->
+  <!-- ============================================ -->
+  <div *ngIf="modalDetalleAbierto()" class="modal-backdrop" (click)="cerrarModalDetalle()">
+    <div class="modal-card modal-detalle" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <div class="badge-modal">Ticket de Venta</div>
+          <h2>#{{ ventaSeleccionada()?.id?.substring(0, 8) }}</h2>
+          <div class="modal-sub">
+            Registrado: {{ formatFecha(ventaSeleccionada()?.vendida_en || ventaSeleccionada()?.created_at) }}
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="cerrarModalDetalle()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Info rápida de la venta -->
+        <div class="detalle-meta-grid">
+          <div class="meta-item">
+            <span class="meta-label">Vendedor:</span>
+            <span class="meta-value">{{ ventaSeleccionada()?.usuario?.name || 'Vendedor' }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Almacén:</span>
+            <span class="meta-value">{{ ventaSeleccionada()?.almacen?.nombre || 'General' }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Método de Cobro:</span>
+            <span class="meta-value badge-inline" [ngClass]="'metodo-' + ventaSeleccionada()?.metodo_pago">
+              {{ getNombreMetodo(ventaSeleccionada()?.metodo_pago) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Tabla de ítems -->
+        <div class="items-table-wrapper">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Producto / Lote</th>
+                <th class="text-center">Unidad / Paquete</th>
+                <th class="text-right">P. Unitario</th>
+                <th *ngIf="puedeVerGanancias()" class="text-right">C. Compra</th>
+                <th class="text-right">Subtotal</th>
+                <th *ngIf="puedeVerGanancias()" class="text-right">Utilidad</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of ventaSeleccionada()?.detalles">
+                <td>
+                  <div class="item-prod-nombre">{{ item.producto?.nombre || 'Producto' }}</div>
+                  <div *ngIf="item.lote" class="item-lote-info">
+                    Lote ID: {{ item.lote.id.substring(0, 8) }}
+                    <span *ngIf="item.lote.fecha_vencimiento">· Vence: {{ item.lote.fecha_vencimiento }}</span>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <span class="badge-unidad" [class.badge-paquete]="item.unidad === 'paquete'">
+                    {{ item.cantidad }} {{ item.unidad === 'paquete' ? 'paquetes' : 'unidades' }}
+                  </span>
+                </td>
+                <td class="text-right">{{ formatMoneda(item.precio_unitario) }}</td>
+                <td *ngIf="puedeVerGanancias()" class="text-right font-muted">
+                  {{ formatMoneda(item.lote?.precio_compra_unitario || 0) }}
+                </td>
+                <td class="text-right font-bold">{{ formatMoneda(item.subtotal) }}</td>
+                <td *ngIf="puedeVerGanancias()" class="text-right font-ganancia">
+                  +{{ formatMoneda(calcularGananciaItem(item)) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Total ticket y Desglose financiero para directivos -->
+        <div class="detalle-total-box" [class.detalle-total-directivo]="puedeVerGanancias()">
+          <div class="total-col">
+            <span class="total-label">TOTAL COBRADO:</span>
+            <span class="total-monto">{{ formatMoneda(ventaSeleccionada()?.total) }}</span>
+          </div>
+          <div *ngIf="puedeVerGanancias() && ventaSeleccionada()" class="ganancia-col">
+            <span class="total-label">COSTO ESTIMADO:</span>
+            <span class="costo-monto">{{ formatMoneda(calcularCostoVenta(ventaSeleccionada()!)) }}</span>
+          </div>
+          <div *ngIf="puedeVerGanancias() && ventaSeleccionada()" class="ganancia-col">
+            <span class="total-label">UTILIDAD NETA:</span>
+            <span class="ganancia-monto">
+              +{{ formatMoneda(calcularGananciaVenta(ventaSeleccionada()!)) }}
+              <small class="margen-inline">({{ calcularMargenVenta(ventaSeleccionada()!) | number:'1.1-1' }}%)</small>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn-corregir-from-modal"
+          (click)="cerrarModalDetalle(); abrirModalEditarPago(ventaSeleccionada()!)"
+        >
+          ✏️ Cambiar Método de Pago
+        </button>
+        <button type="button" class="btn-primary" (click)="cerrarModalDetalle()">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- MODAL: CORREGIR MÉTODO DE PAGO               -->
+  <!-- ============================================ -->
+  <div *ngIf="modalEditarPagoAbierto()" class="modal-backdrop" (click)="cerrarModalEditarPago()">
+    <div class="modal-card modal-corregir" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <div class="badge-modal badge-warning">Corrección de Arqueo</div>
+          <h2>Cambiar Método de Pago</h2>
+          <div class="modal-sub">
+            Ticket #{{ ventaAEditar()?.id?.substring(0, 8) }} — Total: {{ formatMoneda(ventaAEditar()?.total) }}
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="cerrarModalEditarPago()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="explicacion-box">
+          <p>
+            ¿Hubo una confusión al cobrar en caja? Selecciona el medio de pago real con el que se realizó la transacción.
+            Al guardar, <strong>el monto esperado de la gaveta de efectivo y el total de banco QR se recalcularán automáticamente en el turno</strong>.
+          </p>
+        </div>
+
+        <div class="metodo-options-list">
+          <label class="metodo-option-card" [class.selected]="nuevoMetodoPago() === 'efectivo'">
+            <input
+              type="radio"
+              name="metodoPagoRadio"
+              value="efectivo"
+              [checked]="nuevoMetodoPago() === 'efectivo'"
+              (change)="nuevoMetodoPago.set('efectivo')"
+            />
+            <div class="option-icon">💵</div>
+            <div class="option-details">
+              <div class="option-title">Efectivo (Gaveta Física)</div>
+              <div class="option-desc">El dinero en billetes/monedas ingresó directamente a la caja registradora física.</div>
+            </div>
+          </label>
+
+          <label class="metodo-option-card" [class.selected]="nuevoMetodoPago() === 'transferencia'">
+            <input
+              type="radio"
+              name="metodoPagoRadio"
+              value="transferencia"
+              [checked]="nuevoMetodoPago() === 'transferencia'"
+              (change)="nuevoMetodoPago.set('transferencia')"
+            />
+            <div class="option-icon">📱</div>
+            <div class="option-details">
+              <div class="option-title">QR / Transferencia Bancaria</div>
+              <div class="option-desc">El dinero se transfirió directamente a la cuenta bancaria. NO debe contarse como billetes en la gaveta.</div>
+            </div>
+          </label>
+
+          <label class="metodo-option-card" [class.selected]="nuevoMetodoPago() === 'tarjeta'">
+            <input
+              type="radio"
+              name="metodoPagoRadio"
+              value="tarjeta"
+              [checked]="nuevoMetodoPago() === 'tarjeta'"
+              (change)="nuevoMetodoPago.set('tarjeta')"
+            />
+            <div class="option-icon">💳</div>
+            <div class="option-details">
+              <div class="option-title">Tarjeta de Débito / Crédito</div>
+              <div class="option-desc">Procesado vía terminal POS bancario. Liquidación electrónica.</div>
+            </div>
+          </label>
+        </div>
+
+        <div *ngIf="errorModalPago()" class="alert-banner alert-danger mt-3">
+          {{ errorModalPago() }}
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn-secondary"
+          [disabled]="guardandoPago()"
+          (click)="cerrarModalEditarPago()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn-primary"
+          [disabled]="guardandoPago()"
+          (click)="guardarNuevoMetodoPago()"
+        >
+          <span *ngIf="!guardandoPago()">✓ Confirmar y Actualizar Arqueo</span>
+          <span *ngIf="guardandoPago()">Actualizando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

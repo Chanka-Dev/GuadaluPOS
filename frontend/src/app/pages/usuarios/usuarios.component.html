@@ -1,0 +1,316 @@
+<div class="usuarios-container">
+  <!-- ENCABEZADO -->
+  <header class="usuarios-header">
+    <div class="header-titles">
+      <span class="badge-modulo">ADMINISTRACIÓN Y ROLES</span>
+      <h1>Gestión de Usuarios</h1>
+      <p class="subtitle">Administración centralizada de accesos, roles y credenciales del personal.</p>
+    </div>
+    <button class="btn-primary" (click)="abrirModalNuevo()" id="btn-nuevo-usuario">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Nuevo Usuario
+    </button>
+  </header>
+
+  <!-- NOTIFICACIONES Y ALERTAS -->
+  @if (successMsg()) {
+    <div class="alerta alerta-exito">
+      <div class="alerta-contenido">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span>{{ successMsg() }}</span>
+      </div>
+      <button class="btn-alerta-cerrar" (click)="cerrarAlertaExito()">✕</button>
+    </div>
+  }
+
+  @if (errorMsg()) {
+    <div class="alerta alerta-error">
+      <div class="alerta-contenido">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>{{ errorMsg() }}</span>
+      </div>
+      <button class="btn-alerta-cerrar" (click)="cerrarAlertaError()">✕</button>
+    </div>
+  }
+
+  <!-- BARRA DE BÚSQUEDA Y FILTRO -->
+  <div class="toolbar-usuarios">
+    <div class="search-box">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input
+        type="text"
+        placeholder="Buscar por nombre, correo, teléfono o rol..."
+        [value]="busqueda()"
+        (input)="actualizarBusqueda($event)"
+        id="input-buscar-usuario"
+      />
+    </div>
+  </div>
+
+  <!-- TABLA DE USUARIOS -->
+  <div class="tabla-card">
+    @if (cargando()) {
+      <div class="estado-vacio">
+        <div class="spinner"></div>
+        <p>Cargando lista de usuarios...</p>
+      </div>
+    } @else if (usuariosFiltrados().length === 0) {
+      <div class="estado-vacio">
+        <p>No se encontraron usuarios registrados o coincidentes con la búsqueda.</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Correo Electrónico</th>
+              <th>Teléfono</th>
+              <th>Rol Asignado</th>
+              <th>Estado</th>
+              <th style="text-align: right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of usuariosFiltrados(); track u.id) {
+              <tr [class.fila-inactiva]="u.activo === false">
+                <td class="col-nombre">
+                  <div class="avatar-circle" [attr.data-rol]="obtenerNombreRol(u)">
+                    {{ (u.name || 'U').charAt(0).toUpperCase() }}
+                  </div>
+                  <strong>{{ u.name }}</strong>
+                </td>
+                <td class="col-email">{{ u.email }}</td>
+                <td class="col-telefono">{{ u.telefono || '—' }}</td>
+                <td>
+                  <span class="badge-rol" [attr.data-rol]="obtenerNombreRol(u)">
+                    {{ obtenerNombreRol(u) | uppercase }}
+                  </span>
+                </td>
+                <td>
+                  @if (u.activo !== false) {
+                    <span class="badge-status status-activo">Activo</span>
+                  } @else {
+                    <span class="badge-status status-inactivo">Inactivo</span>
+                  }
+                </td>
+                <td class="col-acciones" style="text-align: right;">
+                  <!-- Botón Editar -->
+                  <button
+                    class="btn-accion btn-editar"
+                    (click)="abrirModalEditar(u)"
+                    title="Editar usuario"
+                    [id]="'btn-editar-' + u.id"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Editar
+                  </button>
+
+                  <!-- Botón Desactivar / Eliminar:
+                       REGLA: Si el usuario tiene rol 'master', este botón NO DEBE EXISTIR en la fila -->
+                  @if (!esUsuarioMaster(u)) {
+                    <button
+                      class="btn-accion btn-desactivar"
+                      (click)="abrirModalDesactivar(u)"
+                      title="Desactivar usuario"
+                      [id]="'btn-desactivar-' + u.id"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                      </svg>
+                      Desactivar
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: CREAR O EDITAR USUARIO -->
+<!-- ========================================================================= -->
+@if (mostrandoModalUsuario()) {
+  <div class="modal-backdrop">
+    <div class="modal-card modal-usuario">
+      <div class="modal-header">
+        <h3>
+          @if (editandoUsuario()) {
+            Editar Usuario: {{ editandoUsuario()?.name }}
+          } @else {
+            Nuevo Usuario
+          }
+        </h3>
+        <button class="btn-close" (click)="cerrarModalUsuario()">✕</button>
+      </div>
+
+      <!-- ALERTA DE SOLO LECTURA (Si un administrador edita a un master) -->
+      @if (modoSoloLectura()) {
+        <div class="banner-aviso-readonly">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <div>
+            <strong>Modo Solo Lectura:</strong>
+            <span> Solo un usuario con rol Master puede modificar a otro usuario Master.</span>
+          </div>
+        </div>
+      }
+
+      <form [formGroup]="formUsuario" (ngSubmit)="guardarUsuario()" class="form-modal">
+        <!-- Nombre -->
+        <div class="form-group">
+          <label for="usr-nombre">Nombre Completo *</label>
+          <input
+            id="usr-nombre"
+            type="text"
+            formControlName="name"
+            placeholder="Ej: Laura Vargas"
+          />
+          @if (formUsuario.get('name')?.touched && formUsuario.get('name')?.invalid) {
+            <span class="form-error">El nombre es requerido (máximo 255 caracteres).</span>
+          }
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label for="usr-email">Correo Electrónico *</label>
+          <input
+            id="usr-email"
+            type="email"
+            formControlName="email"
+            placeholder="Ej: laura@guadalupos.local"
+          />
+          @if (formUsuario.get('email')?.touched && formUsuario.get('email')?.invalid) {
+            <span class="form-error">Ingrese un correo electrónico válido.</span>
+          }
+        </div>
+
+        <!-- Fila 2: Contraseña y Teléfono -->
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="usr-password">
+              Contraseña
+              @if (!editandoUsuario()) { <span>*</span> }
+              @else { <small class="lbl-opcional">(opcional si no cambia)</small> }
+            </label>
+            <input
+              id="usr-password"
+              type="password"
+              formControlName="password"
+              [placeholder]="editandoUsuario() ? '•••••••• (sin cambios)' : 'Mínimo 6 caracteres'"
+            />
+            @if (formUsuario.get('password')?.touched && formUsuario.get('password')?.invalid) {
+              <span class="form-error">Mínimo 6 caracteres requeridos.</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="usr-telefono">Teléfono</label>
+            <input
+              id="usr-telefono"
+              type="text"
+              formControlName="telefono"
+              placeholder="Ej: 71234567"
+            />
+          </div>
+        </div>
+
+        <!-- Rol:
+             REGLA: El select NO muestra 'master' a menos que el usuario logueado sea master -->
+        <div class="form-group">
+          <label for="usr-rol">Rol del Sistema *</label>
+          <select id="usr-rol" formControlName="rol">
+            @for (rol of rolesDisponibles(); track rol) {
+              <option [value]="rol">
+                {{ rol | uppercase }}
+              </option>
+            }
+          </select>
+          <span class="form-hint">
+            Permisos definidos por rol según jerarquía y responsabilidades del puesto.
+          </span>
+        </div>
+
+        <!-- Acciones del Modal -->
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="cerrarModalUsuario()">
+            {{ modoSoloLectura() ? 'Cerrar' : 'Cancelar' }}
+          </button>
+          @if (!modoSoloLectura()) {
+            <button
+              type="submit"
+              class="btn-primary"
+              [disabled]="formUsuario.invalid || procesandoForm()"
+              id="btn-guardar-usuario"
+            >
+              @if (procesandoForm()) {
+                Guardando...
+              } @else {
+                {{ editandoUsuario() ? 'Guardar Cambios' : 'Crear Usuario' }}
+              }
+            </button>
+          }
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ========================================================================= -->
+<!-- MODAL: CONFIRMAR DESACTIVACIÓN -->
+<!-- ========================================================================= -->
+@if (usuarioADesactivar()) {
+  <div class="modal-backdrop">
+    <div class="modal-card modal-confirmacion">
+      <div class="modal-header">
+        <h3>Confirmar Desactivación</h3>
+        <button class="btn-close" (click)="cerrarModalDesactivar()">✕</button>
+      </div>
+      <div class="confirmacion-body">
+        <p>¿Estás seguro de que deseas desactivar al usuario <strong>{{ usuarioADesactivar()?.name }}</strong> ({{ usuarioADesactivar()?.email }})?</p>
+        <p class="alerta-texto-advertencia">El usuario no podrá iniciar sesión en GuadaluPOS hasta que sea reactivado.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="cerrarModalDesactivar()">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn-danger"
+          [disabled]="procesandoForm()"
+          (click)="ejecutarDesactivacion()"
+          id="btn-confirmar-desactivar"
+        >
+          @if (procesandoForm()) {
+            Desactivando...
+          } @else {
+            Sí, Desactivar
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

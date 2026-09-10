@@ -1,0 +1,514 @@
+<div class="pos-container">
+
+  <!-- ============================================ -->
+  <!-- CASO 1: SIN TURNO ACTIVO (BLOQUEA LA PANTALLA) -->
+  <!-- ============================================ -->
+  <div *ngIf="!cargandoInicial() && !turnoActivo()" class="turno-bloqueo-overlay">
+    <div class="turno-card">
+      <div class="turno-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2"/>
+          <path d="M7 15h0M2 9.5h20"/>
+        </svg>
+      </div>
+      <h2>Apertura de Turno Requerida</h2>
+      <p class="turno-desc">
+        No tienes un turno de caja abierto en este momento. Ingresa el monto inicial en caja y selecciona el almacén de despacho para comenzar a vender.
+      </p>
+
+      <form [formGroup]="abrirTurnoForm" (ngSubmit)="abrirTurno()" class="turno-form">
+        <div *ngIf="almacenes().length > 0" class="form-group">
+          <label for="almacen_id">Almacén de Venta</label>
+          <select id="almacen_id" formControlName="almacen_id" class="input-field select-field">
+            <option *ngFor="let alm of almacenes()" [value]="alm.id">
+              {{ alm.nombre }} ({{ alm.tipo }})
+            </option>
+          </select>
+        </div>
+
+        <!-- Banner de Caja Compartida si ya hay un turno abierto en este almacén -->
+        <div *ngIf="turnoAlmacenAbierto()" class="caja-compartida-banner">
+          <div class="caja-compartida-header">
+            <span class="badge-alerta">👥 Caja Abierta Detectada</span>
+            <span class="tag-turno-id">Turno #{{ turnoAlmacenAbierto()?.id?.substring(0, 8) }}</span>
+          </div>
+          <p class="caja-compartida-texto">
+            Ya existe un turno activo en este almacén iniciado por
+            <strong>{{ turnoAlmacenAbierto()?.usuario?.name || 'otro operador' }}</strong>
+            con un fondo inicial de <strong>{{ formatMoneda(turnoAlmacenAbierto()?.monto_inicial) }}</strong>.
+          </p>
+          <p class="caja-compartida-subtexto">
+            Si van a operar la misma caja física y compartir la gaveta de efectivo, únete a este turno para no duplicar el fondo inicial.
+          </p>
+          <button
+            type="button"
+            class="btn-unirse-turno"
+            (click)="unirseATurnoAbierto()"
+            [disabled]="procesandoApertura()"
+          >
+            <span *ngIf="!procesandoApertura()">🤝 UNIRME A ESTA CAJA COMPARTIDA</span>
+            <span *ngIf="procesandoApertura()">Uniéndose...</span>
+          </button>
+          <div class="divider-o">
+            <span>O abrir una caja / turno independiente</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="monto_inicial">Monto Inicial en Caja ($)</label>
+          <input
+            id="monto_inicial"
+            type="number"
+            step="0.50"
+            min="0"
+            formControlName="monto_inicial"
+            class="input-field input-grande"
+            placeholder="0.00"
+          />
+        </div>
+
+        <div *ngIf="errorApertura()" class="error-banner">
+          {{ errorApertura() }}
+        </div>
+
+        <button
+          type="submit"
+          [disabled]="abrirTurnoForm.invalid || procesandoApertura()"
+          class="btn-primary btn-block btn-grande"
+        >
+          <span *ngIf="!procesandoApertura()">ABRIR TURNO Y EMPEZAR</span>
+          <span *ngIf="procesandoApertura()">Abriendo turno...</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- CASO 2: CON TURNO ACTIVO (PANTALLA DE VENTA)  -->
+  <!-- ============================================ -->
+  <div *ngIf="turnoActivo()" class="pos-workspace">
+
+    <!-- Barra de estado del Turno y Badges Offline -->
+    <header class="turno-status-bar">
+      <div class="turno-info">
+        <span class="status-indicator" [class.offline]="!estaOnline()"></span>
+        <span class="turno-tag">{{ estaOnline() ? 'TURNO ABIERTO' : 'MODO OFFLINE' }}</span>
+        <span class="almacen-tag">{{ turnoActivo()?.almacen?.nombre || 'Almacén de venta' }}</span>
+
+        <!-- Badge de Ventas Pendientes (Reloj, no invasivo) -->
+        <div *ngIf="syncService.conteoPendientes() > 0" class="badge-offline-pendiente" title="Ventas guardadas localmente esperando conexión">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span>{{ syncService.conteoPendientes() }} por sincronizar</span>
+        </div>
+
+        <!-- Badge de Conflictos (Llamativo, clickeable) -->
+        <button
+          *ngIf="syncService.conteoConflictos() > 0"
+          type="button"
+          (click)="abrirModalConflictos()"
+          class="badge-offline-conflicto"
+          title="Ver ventas con conflicto"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>{{ syncService.conteoConflictos() }} conflicto{{ syncService.conteoConflictos() > 1 ? 's' : '' }}</span>
+        </button>
+      </div>
+
+      <div class="turno-monto">
+        Fondo: <strong>{{ turnoActivo()?.monto_inicial | currency:'USD':'symbol':'1.2-2' }}</strong>
+      </div>
+    </header>
+
+    <!-- Mensajes de Notificación Global (Éxito Online / Offline / Error Stock) -->
+    <!-- Notificación de Venta Online (Verde) -->
+    <div *ngIf="mensajeExitoOnline()" class="notif-banner exito animate-slide-down">
+      <div class="notif-content">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <div>
+          <strong>¡Venta registrada con éxito!</strong>
+          <div class="notif-subtext">{{ mensajeExitoOnline() }}</div>
+        </div>
+      </div>
+      <button (click)="mensajeExitoOnline.set(null)" class="btn-icon">✕</button>
+    </div>
+
+    <!-- Notificación de Venta Offline (Ámbar con Reloj, visualmente distinta) -->
+    <div *ngIf="mensajeExitoOffline()" class="notif-banner offline-banner animate-slide-down">
+      <div class="notif-content">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <div>
+          <strong>Venta guardada localmente (Modo Offline)</strong>
+          <div class="notif-subtext">{{ mensajeExitoOffline() }}</div>
+        </div>
+      </div>
+      <button (click)="mensajeExitoOffline.set(null)" class="btn-icon">✕</button>
+    </div>
+
+    <div *ngIf="errorVenta()" class="notif-banner error animate-shake">
+      <div class="notif-content">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <div>
+          <strong>No se pudo registrar la venta</strong>
+          <div class="notif-subtext">{{ errorVenta() }}</div>
+        </div>
+      </div>
+      <button (click)="errorVenta.set(null)" class="btn-icon">✕</button>
+    </div>
+
+    <!-- Catálogo de Productos (Optimizado para Touch / Móvil) -->
+    <main class="catalogo-section">
+      <div class="catalogo-header">
+        <h3>Productos Disponibles</h3>
+        <span class="catalogo-count">{{ productos().length }} artículos</span>
+      </div>
+
+      <div *ngIf="cargandoProductos()" class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando productos...</p>
+      </div>
+
+      <div *ngIf="!cargandoProductos() && productos().length === 0" class="empty-state">
+        <p>No hay productos activos en el catálogo.</p>
+      </div>
+
+      <div class="productos-grid">
+        <div
+          *ngFor="let p of productos()"
+          (click)="seleccionarProducto(p)"
+          class="producto-card"
+        >
+          <div class="producto-foto">
+            <img *ngIf="p.foto_path" [src]="p.foto_path" [alt]="p.nombre" />
+            <div *ngIf="!p.foto_path" class="foto-generica">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.8">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                <line x1="12" y1="22.08" x2="12" y2="12"/>
+              </svg>
+            </div>
+            <span *ngIf="p.permite_venta_por_paquete" class="paquete-badge">
+              Pack x{{ p.unidades_por_paquete }}
+            </span>
+          </div>
+
+          <div class="producto-detalles">
+            <h4 class="producto-nombre">{{ p.nombre }}</h4>
+            <div class="producto-precio">
+              {{ formatMoneda(p.precio_venta) }}
+              <span class="precio-unidad">/ ud</span>
+            </div>
+          </div>
+
+          <button class="btn-agregar-touch" aria-label="Agregar al carrito">
+            +
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- MODAL: SELECTOR DE UNIDAD / PAQUETE / MAYORISTA -->
+    <!-- ========================================== -->
+    <div *ngIf="productoEnModal()" class="modal-backdrop" (click)="cerrarModalPaquete()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <h3>{{ productoEnModal()?.nombre }}</h3>
+        <p class="modal-sub">
+          <ng-container *ngIf="productoEnModal()?.permite_venta_por_paquete">
+            Venta individual o por paquete cerrado de {{ productoEnModal()?.unidades_por_paquete }} unidades.
+          </ng-container>
+          <ng-container *ngIf="!productoEnModal()?.permite_venta_por_paquete">
+            Venta por unidad individual.
+          </ng-container>
+        </p>
+
+        <!-- Selector de Unidad / Paquete (si el producto lo permite) -->
+        <div *ngIf="productoEnModal()?.permite_venta_por_paquete" class="unidad-selector-group">
+          <label class="unidad-radio" [class.active]="modalUnidad() === 'unidad'">
+            <input type="radio" name="modal_unidad" value="unidad" [checked]="modalUnidad() === 'unidad'" (change)="cambiarUnidadModal('unidad')">
+            <div class="radio-body">
+              <span class="radio-title">Por Unidad</span>
+              <span class="radio-price">{{ formatMoneda(productoEnModal()?.precio_venta) }} c/u</span>
+            </div>
+          </label>
+
+          <label class="unidad-radio" [class.active]="modalUnidad() === 'paquete'">
+            <input type="radio" name="modal_unidad" value="paquete" [checked]="modalUnidad() === 'paquete'" (change)="cambiarUnidadModal('paquete')">
+            <div class="radio-body">
+              <span class="radio-title">Por Paquete (x{{ productoEnModal()?.unidades_por_paquete }})</span>
+              <span class="radio-price">
+                {{ formatPrecioPaquete(productoEnModal()) }}
+              </span>
+            </div>
+          </label>
+        </div>
+
+        <div class="cantidad-selector">
+          <label for="input_modal_cantidad" class="cant-label">Cantidad a añadir:</label>
+          <div class="stepper">
+            <button type="button" (click)="cambiarCantidadModal(-1)" class="btn-step" aria-label="Disminuir cantidad">-</button>
+            <input
+              id="input_modal_cantidad"
+              type="number"
+              min="1"
+              step="1"
+              [value]="modalCantidad()"
+              (input)="actualizarCantidadModal($event)"
+              (blur)="validarCantidadModalBlur($event)"
+              class="input-stepper"
+            />
+            <button type="button" (click)="cambiarCantidadModal(1)" class="btn-step" aria-label="Aumentar cantidad">+</button>
+          </div>
+        </div>
+
+        <!-- Ajuste Mayorista / Precios y Lote (Privilegiados: Master, Admin, Supervisor) -->
+        <div *ngIf="puedeModificarPrecio()" class="wholesale-panel">
+          <div class="wholesale-badge">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+            <span>Venta Mayorista / Precio Negociado</span>
+          </div>
+
+          <div class="form-group wholesale-input-group">
+            <label for="precio_personalizado_input">Precio de venta por {{ modalUnidad() }} ($):</label>
+            <div class="precio-input-wrapper">
+              <input
+                id="precio_personalizado_input"
+                type="number"
+                step="0.10"
+                min="0.01"
+                [value]="modalPrecioPersonalizado()"
+                (input)="actualizarPrecioModal($event)"
+                class="input-field input-destacado"
+                placeholder="0.00"
+              />
+              <span *ngIf="productoEnModal()" class="precio-catalogo-ref">
+                Catálogo: {{ formatMoneda(obtenerPrecioBase(productoEnModal()!, modalUnidad())) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="form-group wholesale-input-group" *ngIf="lotesDisponiblesModal().length > 0">
+            <label for="lote_especifico_select">Asignar Lote de Salida (Opcional):</label>
+            <select
+              id="lote_especifico_select"
+              class="input-field select-field"
+              [value]="modalLoteSeleccionadoId() || ''"
+              (change)="modalLoteSeleccionadoId.set($any($event.target).value || '')"
+            >
+              <option value="">Rotación automática (FEFO - Primer lote en vencer)</option>
+              <option *ngFor="let lote of lotesDisponiblesModal()" [value]="lote.id">
+                Lote [{{ lote.id.substring(0, 8) }}] — Stock: {{ lote.cantidad_unidades }} uds ({{ lote.cantidad_paquetes }} paq)
+                <ng-container *ngIf="lote.fecha_vencimiento"> | Vence: {{ lote.fecha_vencimiento }}</ng-container>
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div *ngIf="!puedeModificarPrecio()" class="vendedor-fefo-notice">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <span>Precio de catálogo fijo. La deducción de stock se gestiona automáticamente por FEFO.</span>
+        </div>
+
+        <div class="modal-actions">
+          <button (click)="cerrarModalPaquete()" class="btn-secondary">Cancelar</button>
+          <button (click)="confirmarModalPaquete()" class="btn-primary">
+            Añadir al Carrito ({{ modalUnidad() === 'paquete' ? modalCantidad() + ' paq' : modalCantidad() + ' ud' }})
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL / BOTTOM SHEET: DETALLE DE COBRO     -->
+    <!-- ========================================== -->
+    <div *ngIf="mostrandoModalCobro()" class="modal-backdrop" (click)="cerrarModalCobro()">
+      <div class="modal-card modal-cobro" (click)="$event.stopPropagation()">
+        <div class="modal-cobro-header">
+          <h3>Confirmar y Cobrar</h3>
+          <button (click)="cerrarModalCobro()" class="btn-icon">✕</button>
+        </div>
+
+        <!-- Lista resumida de items -->
+        <div class="cobro-items-lista">
+          <div *ngFor="let item of carrito()" class="cobro-item-row">
+            <div class="item-info">
+              <span class="item-name">{{ item.producto.nombre }}</span>
+              <span class="item-calc">
+                {{ item.cantidad }} {{ item.unidad }}{{ item.cantidad > 1 ? 's' : '' }} × {{ formatMoneda(item.precioUnitario) }}
+              </span>
+              <div class="item-tags" *ngIf="item.precioPersonalizado || item.loteId">
+                <span *ngIf="item.precioPersonalizado" class="tag-mayorista">Precio Especial</span>
+                <span *ngIf="item.loteId" class="tag-lote">Lote asignado</span>
+              </div>
+            </div>
+            <div class="item-subtotal">
+              {{ formatMoneda(item.subtotal) }}
+            </div>
+          </div>
+        </div>
+
+        <div class="cobro-total-divider"></div>
+
+        <div class="cobro-total-display">
+          <span>Total a Cobrar:</span>
+          <span class="total-big">{{ formatMoneda(totalCarrito()) }}</span>
+        </div>
+
+        <!-- Selector de método de pago -->
+        <div class="metodo-pago-section">
+          <label class="metodo-label">Método de Pago:</label>
+          <div class="metodos-grid">
+            <button
+              type="button"
+              [class.active]="metodoPago() === 'efectivo'"
+              (click)="metodoPago.set('efectivo')"
+              class="btn-metodo"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="6" width="20" height="12" rx="2"/>
+                <circle cx="12" cy="12" r="2"/>
+              </svg>
+              Efectivo
+            </button>
+
+            <button
+              type="button"
+              [class.active]="metodoPago() === 'transferencia'"
+              (click)="metodoPago.set('transferencia')"
+              class="btn-metodo"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+              Transferencia / QR
+            </button>
+
+            <button
+              type="button"
+              [class.active]="metodoPago() === 'tarjeta'"
+              (click)="metodoPago.set('tarjeta')"
+              class="btn-metodo"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                <line x1="1" y1="10" x2="23" y2="10"/>
+              </svg>
+              Tarjeta
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="errorVenta()" class="error-banner">
+          {{ errorVenta() }}
+        </div>
+
+        <button
+          (click)="ejecutarCobro()"
+          [disabled]="procesandoCobro() || carrito().length === 0"
+          class="btn-primary btn-block btn-cobrar-final"
+        >
+          <span *ngIf="!procesandoCobro()">REGISTRAR COBRO ({{ formatMoneda(totalCarrito()) }})</span>
+          <span *ngIf="procesandoCobro()">Registrando venta...</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: DETALLES DE CONFLICTOS OFFLINE      -->
+    <!-- ========================================== -->
+    <div *ngIf="mostrandoModalConflictos()" class="modal-backdrop" (click)="cerrarModalConflictos()">
+      <div class="modal-card modal-conflictos" (click)="$event.stopPropagation()">
+        <div class="modal-cobro-header">
+          <h3 style="color: #f87171;">Ventas en Conflicto de Sincronización</h3>
+          <button (click)="cerrarModalConflictos()" class="btn-icon">✕</button>
+        </div>
+        <p class="modal-sub">Las siguientes ventas no pudieron sincronizarse en el servidor (ej. stock insuficiente al momento de reconectar). Quedan retenidas para revisión:</p>
+
+        <div class="conflictos-lista">
+          <div *ngFor="let c of syncService.ventasEnConflicto()" class="conflicto-card">
+            <div class="conflicto-header">
+              <span class="conflicto-id">UUID: {{ c.client_uuid.substring(0, 8) }}...</span>
+              <span class="conflicto-tag">CONFLICTO</span>
+            </div>
+            <div class="conflicto-error">
+              <strong>Motivo:</strong> {{ c.mensaje_error || 'Error de validación al sincronizar.' }}
+            </div>
+            <div class="conflicto-items">
+              <strong>Artículos:</strong>
+              <ul>
+                <li *ngFor="let item of c.items">
+                  {{ obtenerNombreProducto(item.producto_id) }} — {{ item.cantidad }} {{ item.unidad }}{{ item.cantidad > 1 ? 's' : '' }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 20px;">
+          <button (click)="cerrarModalConflictos()" class="btn-secondary btn-block">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- CARRITO INFERIOR FIJO (BARRA STICKY)       -->
+    <!-- ========================================== -->
+    <footer class="carrito-sticky-bar" [class.has-items]="carrito().length > 0">
+      <div class="carrito-summary" (click)="toggleExpandirCarrito()">
+        <div class="badge-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="9" cy="21" r="1"/>
+            <circle cx="20" cy="21" r="1"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          </svg>
+          <span *ngIf="totalItems() > 0" class="items-count">{{ totalItems() }}</span>
+        </div>
+
+        <div class="carrito-totals">
+          <span class="total-label">Total Carrito</span>
+          <span class="total-amount">{{ formatMoneda(totalCarrito()) }}</span>
+        </div>
+      </div>
+
+      <div class="carrito-actions">
+        <button
+          *ngIf="carrito().length > 0"
+          (click)="limpiarCarrito()"
+          class="btn-limpiar"
+          title="Vaciar carrito"
+        >
+          Vaciar
+        </button>
+        <button
+          [disabled]="carrito().length === 0 || procesandoCobro()"
+          (click)="abrirModalCobro()"
+          class="btn-cobrar"
+        >
+          Cobrar
+        </button>
+      </div>
+    </footer>
+
+  </div>
+</div>

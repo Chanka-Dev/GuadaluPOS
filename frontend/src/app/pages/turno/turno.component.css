@@ -1,0 +1,547 @@
+.turno-container {
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.turno-header {
+  margin-bottom: 24px;
+}
+
+.badge-modulo {
+  display: inline-block;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 16px;
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.turno-header h1 {
+  margin: 0 0 6px;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #f8fafc;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+/* Alertas */
+.alerta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
+
+.alerta-contenido {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.alerta-exito {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.alerta-error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.btn-alerta-cerrar {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+/* Tarjeta Turno Activo */
+.card-turno-activo {
+  background: linear-gradient(145deg, #1e293b, #0f172a);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 18px;
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.card-header-activo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.badge-status-activo {
+  display: inline-block;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+
+.card-header-activo h2 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.btn-cerrar-turno {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-cerrar-turno:hover {
+  opacity: 0.9;
+}
+
+.detalles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.detalle-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detalle-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detalle-valor {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.valor-inicial {
+  color: #10b981;
+}
+
+.valor-mono {
+  font-family: monospace;
+  font-size: 0.95rem;
+  color: #cbd5e1;
+}
+
+/* Tarjeta Sin Turno */
+.card-sin-turno {
+  background: #1e293b;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 18px;
+  padding: 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.sin-turno-icono {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sin-turno-info {
+  flex: 1;
+}
+
+.sin-turno-info h3 {
+  margin: 0 0 6px;
+  font-size: 1.25rem;
+  color: #f8fafc;
+  font-weight: 800;
+}
+
+.sin-turno-info p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.btn-ir-venta {
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Supervisión Global */
+.seccion-supervision {
+  margin-top: 36px;
+}
+
+.seccion-header {
+  margin-bottom: 16px;
+}
+
+.seccion-header h2 {
+  margin: 0 0 4px;
+  font-size: 1.3rem;
+  color: #f8fafc;
+  font-weight: 800;
+}
+
+.tabla-card {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.data-table th {
+  background: rgba(15, 23, 42, 0.6);
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.data-table td {
+  padding: 14px 18px;
+  font-size: 0.88rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+  vertical-align: middle;
+}
+
+.data-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.col-usuario {
+  display: flex;
+  flex-direction: column;
+}
+
+.col-usuario strong {
+  color: #f8fafc;
+}
+
+.user-subtext {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.badge-almacen {
+  display: inline-block;
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.monto-inicial {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.btn-accion-cerrar {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-accion-cerrar:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+/* Modal Arqueo y Cierre */
+.modal-cierre-caja {
+  max-width: 500px;
+}
+
+.cierre-info-header {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.88rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.info-lbl {
+  color: #94a3b8;
+}
+
+.resultado-arqueo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.resumen-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.resumen-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+}
+
+.resumen-lbl {
+  display: block;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.resumen-val {
+  font-size: 1.25rem;
+  color: #f8fafc;
+}
+
+/* Indicador de Diferencia */
+.diferencia-card {
+  border-radius: 14px;
+  padding: 16px 20px;
+  border: 1px solid transparent;
+}
+
+.dif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.dif-titulo {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.dif-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.dif-monto {
+  font-size: 2rem;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.dif-descripcion {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+/* Sobrante */
+.dif-sobrante {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+.dif-sobrante .dif-badge {
+  background: rgba(16, 185, 129, 0.25);
+  color: #6ee7b7;
+}
+
+/* Faltante */
+.dif-faltante {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+.dif-faltante .dif-badge {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+}
+
+/* Exacto */
+.dif-exacto {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #93c5fd;
+}
+.dif-exacto .dif-badge {
+  background: rgba(59, 130, 246, 0.25);
+  color: #bfdbfe;
+}
+
+.card-turno-cargando, .estado-vacio {
+  padding: 36px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Colores y métricas del arqueo contable */
+.text-emerald { color: #10b981; }
+.text-sky { color: #38bdf8; }
+.text-purple { color: #c084fc; }
+.sub-conteo { font-size: 0.72rem; color: #94a3b8; font-weight: normal; margin-left: 4px; }
+.detalle-destacado {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+.valor-destacado {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #34d399;
+}
+.highlight-row {
+  background: rgba(16, 185, 129, 0.12);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border-left: 3px solid #10b981;
+}
+.text-destacado {
+  color: #34d399;
+  font-size: 1.15rem;
+}
+.qr-row {
+  background: rgba(56, 189, 248, 0.08);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.caja-compartida-resumen {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.caja-compartida-resumen h4 {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.vendedores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.vendedor-card-mini {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+}
+.vendedor-nombre {
+  font-weight: 700;
+  color: #e2e8f0;
+  font-size: 0.88rem;
+}
+.vendedor-monto {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #38bdf8;
+  margin: 2px 0;
+}
+.vendedor-stats {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
