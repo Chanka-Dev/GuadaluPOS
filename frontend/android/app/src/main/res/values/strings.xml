@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GuadaluPOS</string>
+    <string name="title_activity_main">GuadaluPOS</string>
+    <string name="package_name">bo.com.guadalupos</string>
+    <string name="custom_url_scheme">bo.com.guadalupos</string>
+</resources>

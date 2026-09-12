@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, from, of } from 'rxjs';
-import { tap, catchError, switchMap } from 'rxjs/operators';
+import { tap, catchError, switchMap, timeout } from 'rxjs/operators';
 import { Producto } from '../models/pos.models';
 import { DbService } from './db.service';
 
@@ -13,13 +13,14 @@ export class ProductoService {
   private db = inject(DbService);
 
   /**
-   * Intenta obtener los productos del servidor primero.
+   * Intenta obtener los productos del servidor primero con timeout de 2.5s.
    * Si responde bien, actualiza la caché local en IndexedDB (fire-and-forget).
-   * Si falla por error de red/servidor, recurre a productos_cache.
+   * Si hay timeout o error de red/servidor, recurre a productos_cache de inmediato.
    * Si la caché local también está vacía, propaga el error.
    */
   listar(): Observable<Producto[]> {
     return this.http.get<Producto[]>('/api/productos').pipe(
+      timeout(2500),
       tap((productos) => {
         // Fire-and-forget: guardar/reemplazar en productos_cache sin bloquear
         this.guardarEnCache(productos);

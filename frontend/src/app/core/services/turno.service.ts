@@ -1,8 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { tap, catchError, timeout } from 'rxjs/operators';
 import { TurnoCaja, Almacen } from '../models/pos.models';
 import { AlmacenService } from './almacen.service';
+
+const TURNO_CACHE_KEY = 'guadalupos_turno_activo';
 
 @Injectable({
   providedIn: 'root',
@@ -13,10 +16,25 @@ export class TurnoService {
 
   /**
    * Consulta si el usuario autenticado tiene un turno abierto.
-   * Devuelve TurnoCaja o null.
+   * Si responde el servidor, actualiza la caché local.
+   * Si hay timeout (2.5s) o fallo de red, recurre al turno guardado en caché local.
    */
   turnoActivo(): Observable<TurnoCaja | null> {
-    return this.http.get<TurnoCaja | null>('/api/turnos/activo');
+    return this.http.get<TurnoCaja | null>('/api/turnos/activo').pipe(
+      timeout(2500),
+      tap((turno) => {
+        if (turno) {
+          this.guardarTurnoEnCache(turno);
+        } else {
+          this.limpiarTurnoCache();
+        }
+      }),
+      catchError(() => {
+        // Red caída o lenta: recuperar turno de caché local para no bloquear la venta
+        const cache = this.obtenerTurnoDeCache();
+        return of(cache);
+      })
+    );
   }
 
   /**
@@ -29,7 +47,9 @@ export class TurnoService {
     if (almacenId) {
       payload.almacen_id = almacenId;
     }
-    return this.http.post<TurnoCaja>('/api/turnos/abrir', payload);
+    return this.http.post<TurnoCaja>('/api/turnos/abrir', payload).pipe(
+      tap((turno) => this.guardarTurnoEnCache(turno))
+    );
   }
 
   /**
@@ -54,20 +74,61 @@ export class TurnoService {
   cerrar(turnoId: string, montoFinalContado: number): Observable<TurnoCaja> {
     return this.http.post<TurnoCaja>(`/api/turnos/${turnoId}/cerrar`, {
       monto_final_contado: montoFinalContado,
-    });
+    }).pipe(
+      tap(() => this.limpiarTurnoCache())
+    );
   }
 
   /**
    * Consulta si existe un turno activo en un almacén determinado.
    */
   consultarTurnoAlmacen(almacenId: string): Observable<TurnoCaja | null> {
-    return this.http.get<TurnoCaja | null>(`/api/turnos/almacen/${almacenId}/activo`);
+    return this.http.get<TurnoCaja | null>(`/api/turnos/almacen/${almacenId}/activo`).pipe(
+      timeout(2500),
+      catchError(() => of(null))
+    );
   }
 
   /**
    * Une al usuario autenticado a un turno de caja abierto en el almacén.
    */
   unirse(turnoId: string): Observable<TurnoCaja> {
-    return this.http.post<TurnoCaja>(`/api/turnos/${turnoId}/unirse`, {});
+    return this.http.post<TurnoCaja>(`/api/turnos/${turnoId}/unirse`, {}).pipe(
+      tap((turno) => this.guardarTurnoEnCache(turno))
+    );
+  }
+
+  private guardarTurnoEnCache(turno: TurnoCaja): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(TURNO_CACHE_KEY, JSON.stringify(turno));
+      }
+    } catch {
+      // Ignorar errores de quota o entorno restringido
+    }
+  }
+
+  private obtenerTurnoDeCache(): TurnoCaja | null {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const item = localStorage.getItem(TURNO_CACHE_KEY);
+        if (item) {
+          return JSON.parse(item) as TurnoCaja;
+        }
+      }
+    } catch {
+      // Ignorar json parsing errors
+    }
+    return null;
+  }
+
+  private limpiarTurnoCache(): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(TURNO_CACHE_KEY);
+      }
+    } catch {
+      // Ignorar
+    }
   }
 }

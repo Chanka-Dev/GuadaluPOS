@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Observable, from, throwError } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { tap, catchError, timeout } from 'rxjs/operators';
 import { RegistrarVentaPayload, VentaFiltros, VentaResponse } from '../models/pos.models';
 import { SyncService } from './sync.service';
 
@@ -40,9 +40,10 @@ export class VentaService {
   /**
    * Registra una venta en el backend.
    * 1. Siempre incluye client_uuid.
-   * 2. Si responde 201: éxito y dispara sincronización en paralelo del resto de la cola.
-   * 3. Si responde 422: error de negocio (stock insuficiente), NO guarda offline y propaga error.
-   * 4. Si falla por error de RED: guarda en ventas_pendientes como "pendiente" y retorna señal offline.
+   * 2. Timeout agresivo de 2.5s para no colgar la UI en 4G saturado.
+   * 3. Si responde 201: éxito y dispara sincronización en paralelo del resto de la cola.
+   * 4. Si responde 422: error de negocio (stock insuficiente), NO guarda offline y propaga error.
+   * 5. Si falla por error de RED o timeout: guarda en ventas_pendientes como "pendiente" y retorna señal offline inmediata.
    */
   registrar(datos: Omit<RegistrarVentaPayload, 'client_uuid'> & { client_uuid?: string }): Observable<VentaResponse> {
     const clientUuid = datos.client_uuid || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : this.generarUUIDAlternativo());
@@ -53,20 +54,21 @@ export class VentaService {
     };
 
     return this.http.post<VentaResponse>('/api/ventas', payload).pipe(
+      timeout(2500),
       tap(() => {
         // Disparador 3: Inmediatamente después de que una venta NUEVA se envía con éxito,
         // aprovechar la conexión confirmada para intentar vaciar el resto de la cola
         this.syncService.sincronizarPendientes();
       }),
       catchError((error: unknown) => {
-        // 4. Si es un error HTTP real con status (ej. 422 stock insuficiente, 403, etc.):
+        // 4. Si es un error HTTP real con status de negocio (ej. 422 stock insuficiente, 401, 403):
         // propagar tal cual para que el componente lo muestre de inmediato
-        if (error instanceof HttpErrorResponse && error.status !== 0) {
+        if (error instanceof HttpErrorResponse && error.status !== 0 && error.status !== 408 && error.status !== 504) {
           return throwError(() => error);
         }
 
-        // 5. Si es un error de RED (status === 0, offline, timeout sin respuesta):
-        // Guardar la venta en la cola ventas_pendientes
+        // 5. Si es un error de RED (status === 0), timeout (2.5s) o fuera de línea:
+        // Guardar la venta de inmediato en la cola ventas_pendientes
         return from(this.guardarVentaOffline(payload));
       })
     );

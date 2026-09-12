@@ -1,0 +1,68 @@
+name: Compilar APK Android (GuadaluPOS)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Generar APK Android
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Instalar dependencias del Frontend
+        run: |
+          cd frontend
+          npm ci || npm install
+
+      - name: Compilar aplicación Angular en Producción
+        run: |
+          cd frontend
+          npx ng build --configuration production --base-href /
+
+      - name: Sincronizar activos con Capacitor Android
+        run: |
+          cd frontend
+          npx cap sync android
+
+      - name: Configurar Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Compilar APK de Android (assembleDebug)
+        run: |
+          cd frontend/android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Renombrar archivo APK
+        run: |
+          cp frontend/android/app/build/outputs/apk/debug/app-debug.apk frontend/android/app/build/outputs/apk/debug/GuadaluPOS.apk
+
+      - name: Publicar archivo APK como Artefacto Descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: GuadaluPOS-Android-APK
+          path: frontend/android/app/build/outputs/apk/debug/GuadaluPOS.apk
+          if-no-files-found: error
+          retention-days: 30
